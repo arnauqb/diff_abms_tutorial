@@ -12,7 +12,7 @@ Welcome to the GitHub repo for the tutorial on differentiable agent-based models
 
 All materials for the tutorial can be found [here](https://github.com/arnauqb/diff_abms_tutorial)
 
-[Automatic Differentiation](https://github.com/arnauqb/diff_abms_tutorial/webpage/01-automatic-differentiation)
+[Automatic Differentiation](https://arnau.ai/diff_abms_tutorial/webpage/01-automatic-differentiation)
 
 
 # Tutors
