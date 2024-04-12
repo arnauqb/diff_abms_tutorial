@@ -21,6 +21,8 @@ The tutorial will be hands-on, with demonstrations in Python, and all materials 
 
 # Outline and Schedule
 
+Date: Monday 6th of May 2024.
+
 | Time | Session | Speaker |
 | --- | --- | --- |
 | 09:00 - 09:30 | State of ABM research and current challenges | Ayush Chopra |
@@ -39,7 +41,7 @@ Rendered notebooks:
 - [1. Automatic Differentiation](./webpage/01-automatic-differentiation)
 
 
-# Tutors
+# Presenters
 
 [Arnau Quera-Bofarull](https://www.arnau.ai) is a postdoctoral researcher at the Department of Computer Science of the University of Oxford.
 
