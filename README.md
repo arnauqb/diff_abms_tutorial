@@ -1,2 +1,3 @@
-# diff_abms_tutorial
-"Differentiable Agent-Based Models" tutorial presented at AAMAS 2024.
+# Tutorial on Differentiable Agent-Based models [AAMAS '24]
+
+Welcome to the GitHub repo for the tutorial on differentiable agent-based models!
