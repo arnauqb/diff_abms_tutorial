@@ -23,12 +23,12 @@ The tutorial will be hands-on, with demonstrations in Python, and all materials 
 
 | Time | Session | Speaker |
 | --- | --- | --- |
-| 09:00 AM - 09:30 AM | State of ABM research and current challenges | Ayush Chopra |
-| 09:30 AM - 10:30 AM | Hands-on: Build a differentiable ABM in PyTorch | Ayush Quera-Bofarull|
-| 10:30 AM - 11:00 AM | Break | - |
-| 11:00 AM - 12:00 AM | Gradient-assisted calibration of ABMs | Ayush & Arnau |
-| 12:00 PM - 12:30 PM | Differentiable ABMs on-the-ground of the New Zealand population | Sijin Zhang |
-| 12:30 PM - 01:00 PM | Closing Remarks | - |
+| 09:00 - 09:30 | State of ABM research and current challenges | Ayush Chopra |
+| 09:30 - 10:30 | Hands-on: Build a differentiable ABM in PyTorch | Ayush Quera-Bofarull|
+| 10:30 - 11:00 | Break | - |
+| 11:00 - 12:00 | Gradient-assisted calibration of ABMs | Ayush & Arnau |
+| 12:00 - 12:30 | Differentiable ABMs on-the-ground of the New Zealand population | Sijin Zhang |
+| 12:30 - 13:00 | Closing Remarks | - |
 
 # Materials
 
