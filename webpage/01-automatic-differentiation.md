@@ -1,3 +1,5 @@
+<script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
 ```python
 import matplotlib.pyplot as plt
 import torch
@@ -17,7 +19,7 @@ As opposed to traditional approach for differentiation such as Finite Difference
 
 A "naive" approach to differentiation corresponds to computing
 
-$\frac{\partial f}{\partial x} \approx  \frac{f(x+\epsilon) - f(x)}{\epsilon}$
+$$ \frac{\partial f}{\partial x} \approx  \frac{f(x+\epsilon) - f(x)}{\epsilon} $$
 
 for a small value of $\epsilon$. Let's see how this performs:
 
@@ -104,7 +106,7 @@ Furthermore, the finite difference method does not scale well with the number of
 An alternative differentiation method to finite differences is Symbolic Differentiation (SD). This is the method implemented by software packages such as Mathematica, or the Python library sympy.
 The basic idea is to hard-code the differentiation rules such as 
 
-$(ab)' = a'b + ab'$
+$$ (ab)' = a'b + ab' $$
 
 and apply them recursively to obtain the exact derivative of a function. Let's see how this works:
 
@@ -328,7 +330,7 @@ The reverse is exactly true for $f_2$.
 
 This example illustrates the following result. Given a function 
 
-$$f: \mathbb R^m \longrightarrow R^n,$$
+$$f: \mathbb R^m \longrightarrow \mathbb R^n,$$
 
 the computation of the jacobian
 
