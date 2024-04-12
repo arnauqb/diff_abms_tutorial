@@ -54,7 +54,7 @@ ax.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x7f3a52e751b0>
+    <matplotlib.legend.Legend at 0x7fd566e07eb0>
 
 
 
@@ -85,7 +85,7 @@ ax[1].legend()
 
 
 
-    <matplotlib.legend.Legend at 0x7f3a52d3dea0>
+    <matplotlib.legend.Legend at 0x7fd564f78790>
 
 
 
@@ -191,13 +191,13 @@ f(x_sym)
 
     TypeError                                 Traceback (most recent call last)
 
-    Cell In[104], line 7
+    Cell In[21], line 7
           4     if x >= 2:
           5         return 3* x
     ----> 7 f(x_sym)
 
 
-    Cell In[104], line 2, in f(x)
+    Cell In[21], line 2, in f(x)
           1 def f(x):
     ----> 2     if x < 2:
           3         return x**3
@@ -251,13 +251,13 @@ def f(x):
 
 We can represent this function as an expression tree [[1]](/https://arxiv.org/pdf/1904.02990.pdf):
 
-<img src="./figures/expression_tree.png" height = 400 widht = 400/>
+<img src="../figures/expression_tree.png" height = 400 widht = 400/>
 
 
 
 But actually, there is a significantly more efficient representation:
 
-<img src="./figures/expression_dag.png" />
+<img src="../figures/expression_dag.png" />
 
 This representation form is known as the expression DAG, or computational graph and is a much more efficient way to store the computational trace of a computer program.
 
@@ -318,8 +318,8 @@ The computational graphs of f1 and f2 are:
 
 
 <p float="left">
-  <img src="./figures/multiple_outputs.png" height = 300 width="200" />
-  <img src="./figures/multiple_inputs.png" height = 300 width="200" /> 
+  <img src="../figures/multiple_outputs.png" height = 300 width="200" />
+  <img src="../figures/multiple_inputs.png" height = 300 width="200" /> 
 </p>
 
 Note that for f1, if we start from the bottom ($x_1$) and then chain the derivatives forward, we can reuse the intermediate computation between the 1st and the 3rd node.
