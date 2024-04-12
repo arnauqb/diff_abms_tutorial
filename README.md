@@ -1,4 +1,4 @@
-# [AAMAS '24] Differentiable Agent-Based models 
+# Differentiable Agent-Based models <br>[AAMAS '24]
 
 Welcome to the GitHub repo for the tutorial on differentiable agent-based models!
 
@@ -12,7 +12,7 @@ Welcome to the GitHub repo for the tutorial on differentiable agent-based models
 
 All materials for the tutorial can be found [here](https://github.com/arnauqb/diff_abms_tutorial)
 
-[Automatic Differentiation](https://github.com/arnauqb/diff_abms_tutorial/blob/main/01-automatic-differentiation.ipynb)
+[Automatic Differentiation](https://github.com/arnauqb/diff_abms_tutorial/webpage/01-automatic-differentiation)
 
 
 # Tutors

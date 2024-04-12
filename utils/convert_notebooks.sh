@@ -1,0 +1,1 @@
+jupyter nbconvert --to markdown ../notebooks/01-automatic-differentiation.ipynb --output-dir ../webpage
