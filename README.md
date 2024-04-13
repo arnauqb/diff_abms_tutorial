@@ -39,6 +39,7 @@ All materials for the tutorial can be found [here](https://github.com/arnauqb/di
 Rendered notebooks:
 
 - [1. Automatic Differentiation](./webpage/01-automatic-differentiation)
+- [2. Differentiating Randomness](./webpage/02-differentiating-randomness)
 
 
 # Presenters
