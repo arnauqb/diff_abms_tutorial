@@ -1,0 +1,22 @@
+#theme: jekyll-theme-minimal
+title: " "
+#description: Tutorial on differentiable ABMs at AAMAs 2024.
+author: Arnau Quera-Bofarull
+email: arnauq@protonmail.com
+#baseurl: "/webpage" # subpath of the site, e.g. "/blog" (leave it blank "" if you're site shouldn't use a subpath)
+
+kramdown:
+  math_engine: mathjax
+  syntax_highlighter: rouge
+
+theme: no-style-please
+theme_config:
+  appearance: "light" # can be "light", "dark" or "auto"
+  back_home_text: ".." # customize text for homepage link in post layout
+  date_format: "%Y-%m-%d" # customize how date is formatted
+  show_description: false # show blog description in home page
+
+
+    #remote_theme: riggraz/no-style-please #poole/hyde #pages-themes/minimal@v0.2.0
+    #plugins:
+    #  - jekyll-remote-theme # add this line to the plugins list if you already have one
