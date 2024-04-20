@@ -42,9 +42,9 @@ All materials for the tutorial can be found [here](https://github.com/arnauqb/di
 
 Rendered notebooks:
 
-- [1. Automatic Differentiation](notebooks_md/01-automatic-differentiation)
-- [2. Differentiating Randomness](notebooks_md/02-differentiating-randomness)
-- [3. Differentiable ABMs](notebooks_md/03-differentiable-abm)
+- [1. Automatic Differentiation](01-automatic-differentiation)
+- [2. Differentiating Randomness](02-differentiating-randomness)
+- [3. Differentiable ABMs](03-differentiable-abm)
 
 
 # Presenters
