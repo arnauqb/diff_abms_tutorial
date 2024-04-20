@@ -3,7 +3,7 @@ title: " "
 #description: Tutorial on differentiable ABMs at AAMAs 2024.
 author: Arnau Quera-Bofarull
 email: arnauq@protonmail.com
-#baseurl: "/webpage" # subpath of the site, e.g. "/blog" (leave it blank "" if you're site shouldn't use a subpath)
+baseurl: https://arnauqb.github.io/diff_abms_tutorial #"/webpage" # subpath of the site, e.g. "/blog" (leave it blank "" if you're site shouldn't use a subpath)
 
 kramdown:
   math_engine: mathjax
