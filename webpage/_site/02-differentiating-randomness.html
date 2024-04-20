@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title> </title><!-- Begin Jekyll SEO tag v2.8.0 -->
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta name="author" content="Arnau Quera-Bofarull" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A (nearly) no-css minimalist Jekyll theme." />
+<meta property="og:description" content="A (nearly) no-css minimalist Jekyll theme." />
+<link rel="canonical" href="http://github.com/riggraz/no-style-please/https://arnauqb.github.io/diff_abms_tutorial/02-differentiating-randomness.html" />
+<meta property="og:url" content="http://github.com/riggraz/no-style-please/https://arnauqb.github.io/diff_abms_tutorial/02-differentiating-randomness.html" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","author":{"@type":"Person","name":"Arnau Quera-Bofarull"},"description":"A (nearly) no-css minimalist Jekyll theme.","url":"http://github.com/riggraz/no-style-please/https://arnauqb.github.io/diff_abms_tutorial/02-differentiating-randomness.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link type="application/atom+xml" rel="alternate" href="http://github.com/riggraz/no-style-please/https://arnauqb.github.io/diff_abms_tutorial/feed.xml" title=" " /><link rel="shortcut icon" type="image/x-icon" href="/https://arnauqb.github.io/diff_abms_tutorial/logo.png" />
+  <link rel="stylesheet" href="assets/css/main.css" />
+</head>
+<body a="light">
+    <main class="page-content" aria-label="Content">
+      <div class="w">
+        <header>
+  <h1> </h1></header><ul></ul><div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">torch</span>
+<span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="n">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+</code></pre></div></div>
+
+<h1 id="differentiating-through-randomness">Differentiating through randomness</h1>
+
+<h2 id="fixed-noise-distribution">Fixed noise distribution</h2>
+
+<p>In the previous notebook (01-automatic-differentiation) we covered the basics of automatic differentiation (AD). However, we left a particular topic untouched. How can we compute the derivative of stochastic programs, and what does that mean, exactly?</p>
+
+<p>Consider the following program with parameter $\theta$</p>
+
+\[\begin{align*}
+    z &amp;\sim \mathcal N(1, 2) \\
+    y &amp;= \theta^2(z+4)
+\end{align*}\]
+
+<p>where $\mathcal N$ is the Normal distribution. This can be coded as:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">normal</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">theta</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">z</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>So, what does it mean to compute</p>
+
+\[\frac{\partial f(\theta)}{\partial \theta} =  \; ?\]
+
+<p>If we think about the definition of derivative,</p>
+
+\[\frac{\partial X(\theta)}{\partial \theta} =  \lim_{\epsilon \to 0} \frac{X(\theta+\epsilon) - X(\theta)}{\epsilon}.\]
+
+<p>we can observe that this derivative is not well defined since the difference $X(\theta+\epsilon) - X(\theta)$ will take random values and it is not clear how to treat this limit.</p>
+
+<p>However, in most cases, we are actually interested in the derivative of an <strong>average</strong> model realization, not just the derivative of a single run. In other words, we want to take gradients of the form</p>
+
+\[\mathbb E_{p(z)} [f_\theta(z)],\]
+
+<p>where $p$ is a probability density and $f$ is a (deterministic) simulator with structural parameters $\theta$. Taking the derivative we have</p>
+
+\[\begin{align*}
+    \nabla_\theta \mathbb E_{p(z)}\;\left[f_\theta(z)\right] &amp;= \nabla_\theta\left[\int_z p(z) f_\theta(z)\mathrm{d}z\right]\\
+                                                             &amp;=  \int_z p(z)\left[\nabla_\theta f_\theta(z)\right]\mathrm{d} z \\
+                                                             &amp;= \mathbb E_{p(z)}[\nabla_\theta f_\theta(z)]
+\end{align*}\]
+
+<p>so that the gradient of the expectation is the expectation of the gradient.</p>
+
+<p>In our considered example, this translates to</p>
+
+\[\mathbb E_{z \sim \mathcal N(1, 2)}\;\left[\theta^2(z+4)\right]\]
+
+<p>now we can take the derivative</p>
+
+\[\nabla_\theta \mathbb E_{z \sim \mathcal N(1, 2)}\;\left[\theta(z+4)\right] = \mathbb E_{z\sim \mathcal N(1,2)} \left[\nabla_\theta \theta^2(z+4)\right] = 10\, \theta\]
+
+<p>Let’s check this result numerically and see the troubles we find.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">theta</span> <span class="o">=</span> <span class="mf">2.0</span>
+<span class="n">epsilons</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">]</span>
+<span class="n">n_samples</span> <span class="o">=</span> <span class="mi">10_000</span>
+<span class="n">samples_per_epsilon</span> <span class="o">=</span> <span class="p">{</span><span class="n">epsilon</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">epsilon</span> <span class="ow">in</span> <span class="n">epsilons</span><span class="p">}</span>
+<span class="k">for</span> <span class="n">epsilon</span> <span class="ow">in</span> <span class="n">epsilons</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">):</span>
+        <span class="n">f_deriv</span> <span class="o">=</span> <span class="p">(</span><span class="nf">f</span><span class="p">(</span><span class="n">theta</span> <span class="o">+</span> <span class="n">epsilon</span><span class="p">)</span> <span class="o">-</span> <span class="nf">f</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">epsilon</span><span class="p">)</span>
+        <span class="n">samples_per_epsilon</span><span class="p">[</span><span class="n">epsilon</span><span class="p">].</span><span class="nf">append</span><span class="p">(</span><span class="n">f_deriv</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">epsilon</span><span class="p">,</span> <span class="n">samples</span><span class="p">)</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">samples_per_epsilon</span><span class="p">.</span><span class="nf">items</span><span class="p">()):</span>
+    <span class="n">ax</span><span class="p">.</span><span class="nf">hist</span><span class="p">(</span>
+        <span class="n">samples</span><span class="p">,</span>
+        <span class="n">bins</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.35</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="sh">"</span><span class="s">$\epsilon=</span><span class="si">{</span><span class="n">epsilon</span><span class="si">}</span><span class="s">$</span><span class="sh">"</span><span class="p">,</span>
+        <span class="n">density</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="sa">f</span><span class="sh">"</span><span class="s">C</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="sh">"</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">axvline</span><span class="p">(</span>
+    <span class="n">theta</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">color</span><span class="o">=</span><span class="sh">"</span><span class="s">black</span><span class="sh">"</span><span class="p">,</span>
+    <span class="n">linestyle</span><span class="o">=</span><span class="sh">"</span><span class="s">dashed</span><span class="sh">"</span><span class="p">,</span>
+    <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Expected derivative</span><span class="sh">"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">legend</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.legend.Legend at 0x7ff0b1a64a60&gt;
+</code></pre></div></div>
+
+<p><img src="02-differentiating-randomness_files/02-differentiating-randomness_5_1.png" alt="png" /></p>
+
+<p>What is going on? The smaller $\epsilon$ is, the variance of our estimator is going $\to \infty$!</p>
+
+<p>This is caused by the fact that the two function calls $X(p)$ and $X(p+\epsilon)$ are uncorrelated (they have a different random seed) and so even calling the program for very similar values of $p$ can cause large differences.</p>
+
+<p>Nonetheless, the finite differences method gives an unbiased estimator in this case.</p>
+
+<p>This issue is not present in automatic differentiation engines, since they only require one evaluation of the model:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">f_torch</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">distributions</span><span class="p">.</span><span class="nc">Normal</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">).</span><span class="nf">sample</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">theta</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">z</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span>
+
+
+<span class="n">n_samples</span> <span class="o">=</span> <span class="mi">10_000</span>
+<span class="n">samples_autograd</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">):</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="nf">f_torch</span><span class="p">(</span><span class="n">theta</span><span class="p">).</span><span class="nf">backward</span><span class="p">()</span>
+    <span class="n">samples_autograd</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">theta</span><span class="p">.</span><span class="n">grad</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">()</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">hist</span><span class="p">(</span>
+    <span class="n">samples_autograd</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.35</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Autograd</span><span class="sh">"</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="sh">"</span><span class="s">C0</span><span class="sh">"</span>
+<span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">axvline</span><span class="p">(</span>
+    <span class="mi">20</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="sh">"</span><span class="s">black</span><span class="sh">"</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="sh">"</span><span class="s">dashed</span><span class="sh">"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Expected derivative</span><span class="sh">"</span>
+<span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">legend</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.legend.Legend at 0x7ff0b0b57d60&gt;
+</code></pre></div></div>
+
+<p><img src="02-differentiating-randomness_files/02-differentiating-randomness_8_1.png" alt="png" /></p>
+
+<p>As we can see, the variance is much lower than the finite difference case.</p>
+
+<h2 id="parameterizable-noise">Parameterizable noise</h2>
+
+<p>In the example above, we made the assumption that the randomness of our model $p(z)$ did not depend on the structural parameters $\theta$ that we want to differentiate by.</p>
+
+<p>However, in most agent-based models this assumption does not hold. Consider, for instance, the case of an SIR model where agents become infected with some probability $p$. This probability may depend on structural parameters such as $R_0$ or social distancing measures that we want to calibrate.</p>
+
+<p>So now we have</p>
+
+\[\tag{1}
+\nabla_\theta\mathbb E_{p_\theta(z)} [f_\theta(z)],\]
+
+<p>expanding the same way as before we find</p>
+
+\[\begin{align*}
+    \nabla_\theta\mathbb E_{p_\theta(z)} [f_\theta(z)] &amp;= \nabla_\theta \left[ \int_z p_\theta(z) f_\theta(z) \mathrm{d}z\right]\\
+                                                       &amp;= \int_z \nabla_\theta\left[p_\theta(z) f_\theta(z)\right] \mathrm{d}z\\
+                                                       &amp;= \int_z f_\theta(z)\nabla_\theta p_\theta(z)\mathrm{d} z + \int_z p_\theta(z) \nabla_\theta f_\theta(z)\mathrm{d}z\\
+                                                       &amp;= \int_z f_\theta(z) \nabla_\theta p_\theta(z) \mathrm{d} z + \mathbb E_{p_\theta(z)} \left[\nabla_\theta f_\theta(z)\right]
+\end{align*}\]
+
+<p>notice that now we have an additional term, $\int_z f_\theta(z) \nabla_\theta p_\theta(z) \mathrm{d} z$, that prevents us from commuting the gradient and the expectation. So, in general, <strong>the gradient of the expectation is not the expectation of the gradient</strong>.</p>
+
+<h3 id="the-reparameterization-trick">The reparameterization trick</h3>
+
+<p>To circumvent this, we introduce the <a href="https://arxiv.org/pdf/1312.6114.pdf">reparameterization trick</a>. Continuous distributions have a property that allows an indirect way of sampling from them. One is direct sampling</p>
+
+\[x \sim p_\theta(x)\]
+
+<p>and indirectly,</p>
+
+\[\epsilon \sim p(\epsilon), x = g(\epsilon, \theta)\]
+
+<p>where $g$ is a deterministic path that maps parameter-free noise ($\epsilon$) to $x$. For instance, to sample from a Normal distribution $\mathcal N(\mu, \sigma^2)$, we can do</p>
+
+\[\epsilon \sim \mathcal N(0, 1), \hspace{0.5cm} x = g_\theta(\epsilon) = \mu + \sigma \epsilon.\]
+
+<p>What have we accomplished with this? We have untangled the “random” part of the distribution from the part that depends on the parameters.
+This allows us to re-formulate (1) as</p>
+
+\[\nabla_\theta\mathbb E_{p_\theta(z)} [f_\theta(z)] = \nabla_\theta\mathbb E_{p(\epsilon)}\left[f(g_\theta(\epsilon, x))\right],\]
+
+<p>where now we can move the gradient inside,</p>
+
+\[\nabla_\theta\mathbb E_{p(\epsilon)}\left[f(g_\theta(\epsilon, x))\right] = \mathbb E_{p(\epsilon)}\left[\nabla_\theta f(g_\theta(\epsilon, x))\right].\]
+
+<p>So we have been able to transform the gradient of the expectation to the expectation of the gradient. This can be computed provided that $f$ and $g$ are differentiable. This expectation can now be estiated by Monte Carlo,</p>
+
+\[\mathbb E_{p(\epsilon)}\left[\nabla_\theta f(g_\theta(\epsilon, x))\right] \approx \frac{1}{N} \sum_{i=1}^N \nabla_\theta f(g_\theta(\epsilon_i, x_i)).\]
+
+<p>Let’s see an example. Consider the program with input $\theta$</p>
+
+\[\begin{align*}
+z \sim \mathcal N(\theta, 4) \\
+y = \theta^2 (4 + z)
+\end{align*}\]
+
+<p>The expected answer is</p>
+
+\[\mathbb E_{\epsilon \sim \mathcal N(0,1)}\left[ \nabla_\theta \theta^2 (4 + \theta + 2\epsilon )\right ] =\mathbb E_{\epsilon \sim \mathcal N(0,1)}[8\theta + 3\theta^2 + 4\theta\epsilon] = 8\theta + 3\theta^2\]
+
+<p>Let’s first check both the parameterized and unreparameterized version:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">f_torch_norep</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">distributions</span><span class="p">.</span><span class="nc">Normal</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">).</span><span class="nf">sample</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">theta</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">z</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">f_torch</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+    <span class="n">epsilon</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">distributions</span><span class="p">.</span><span class="nc">Normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">).</span><span class="nf">sample</span><span class="p">()</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">theta</span> <span class="o">+</span> <span class="n">epsilon</span> <span class="o">*</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="n">theta</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">4</span> <span class="o">+</span> <span class="n">z</span><span class="p">)</span>
+
+
+<span class="n">rep_samples</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">norep_samples</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">n_samples</span> <span class="o">=</span> <span class="mi">2_000</span>
+<span class="n">theta_value</span> <span class="o">=</span> <span class="mf">2.0</span>
+<span class="n">analytical_result</span> <span class="o">=</span> <span class="mi">8</span> <span class="o">*</span> <span class="n">theta_value</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">theta_value</span><span class="o">**</span><span class="mi">2</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">):</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">(</span><span class="n">theta_value</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="nf">f_torch_norep</span><span class="p">(</span><span class="n">theta</span><span class="p">).</span><span class="nf">backward</span><span class="p">()</span>
+    <span class="n">norep_samples</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">theta</span><span class="p">.</span><span class="n">grad</span><span class="p">.</span><span class="nf">item</span><span class="p">())</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">(</span><span class="n">theta_value</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="nf">f_torch</span><span class="p">(</span><span class="n">theta</span><span class="p">).</span><span class="nf">backward</span><span class="p">()</span>
+    <span class="n">rep_samples</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">theta</span><span class="p">.</span><span class="n">grad</span><span class="p">.</span><span class="nf">item</span><span class="p">())</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">()</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">hist</span><span class="p">(</span>
+    <span class="n">norep_samples</span><span class="p">,</span>
+    <span class="n">bins</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.35</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">No Reparametrization</span><span class="sh">"</span><span class="p">,</span>
+    <span class="n">density</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+    <span class="n">color</span><span class="o">=</span><span class="sh">"</span><span class="s">C0</span><span class="sh">"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">hist</span><span class="p">(</span>
+    <span class="n">rep_samples</span><span class="p">,</span>
+    <span class="n">bins</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.35</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Reparametrization</span><span class="sh">"</span><span class="p">,</span>
+    <span class="n">density</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+    <span class="n">color</span><span class="o">=</span><span class="sh">"</span><span class="s">C1</span><span class="sh">"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">axvline</span><span class="p">(</span>
+    <span class="n">analytical_result</span><span class="p">,</span>
+    <span class="n">color</span><span class="o">=</span><span class="sh">"</span><span class="s">black</span><span class="sh">"</span><span class="p">,</span>
+    <span class="n">linestyle</span><span class="o">=</span><span class="sh">"</span><span class="s">dashed</span><span class="sh">"</span><span class="p">,</span>
+    <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Expected derivative</span><span class="sh">"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">legend</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.legend.Legend at 0x7ff0b80243a0&gt;
+</code></pre></div></div>
+
+<p><img src="02-differentiating-randomness_files/02-differentiating-randomness_12_1.png" alt="png" /></p>
+
+<p>So we need to be careful, because PyTorch may not be applying the reparameterization trick and we may obtain the wrong results!!</p>
+
+<p>By calling <code class="language-plaintext highlighter-rouge">dist.sample()</code> the gradient propagation stops and so we obtain the wrong result. Thankfully, PyTorch has a shortcut to implement the reparameterization trick for us so we don’t have to do it manually. This can be done by using the <code class="language-plaintext highlighter-rouge">.rsample()</code> method.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">f_torch</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">distributions</span><span class="p">.</span><span class="nc">Normal</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">).</span><span class="nf">rsample</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">theta</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">z</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span>
+
+
+<span class="n">rep</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="nf">sum</span><span class="p">([</span><span class="n">torch</span><span class="p">.</span><span class="n">func</span><span class="p">.</span><span class="nf">grad</span><span class="p">(</span><span class="n">f_torch</span><span class="p">)(</span><span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">(</span><span class="mf">2.0</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">)])</span>
+    <span class="o">/</span> <span class="n">n_samples</span>
+<span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="si">{</span><span class="n">rep</span><span class="si">}</span><span class="s"> == </span><span class="si">{</span><span class="n">analytical_result</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>28.234447479248047 == 28.0
+</code></pre></div></div>
+
+<h1 id="discrete-randomness">Discrete randomness</h1>
+
+<p>The above discussion about the reparameterization trick makes the assumption that the random distribution is differentiable. This is true for continuous distributions but it does not hold for discrete ones such as the Bernoulli or Categorical distributions.</p>
+
+<p>Multiple methods exist to deal with this issue, the most common ones being the Stright-Through estimator <a href="https://arxiv.org/abs/1308.3432">(Bengio et al. 2013)</a> or the Gumbel-Softmax trick <a href="https://arxiv.org/abs/1611.01144">(Jang et al. 2016)</a>. Newer methods are continuously being developed and the <a href="https://arxiv.org/abs/2210.08572">StochasticAD.jl</a> package in the Julia language is a promising new direction.</p>
+
+<p>Here we focus on the Gumbel-Softmax (GS) trick. The GS distribution is a continuous relaxation of the Categorical distribution. The GS has a temperature parameter $\tau$ which controls the smoothness of the approximation such that the exact Categorical sampling is recovered for $\tau\to 0$. However, the variance of the gradient will grow as $\tau\to 0$ so $\tau$ acts as a bias-variance trade-off.</p>
+
+<p>PyTorch has a standard implementation ready to use. In particular, it implements a “hard” version of GS. The idea is that we can use the samples from the categorical distribution in the forward simulated pass, and use the continuous relaxation to approximate the gradients in the backward pass. This way we guarantee that the forward simulation is exactly equivalent to the non-relaxed version.</p>
+
+<p>Consider the program with input parameter $\theta$:</p>
+
+\[x = 2 \mathrm{Bernoulli}(3\theta) + \mathrm{Bernoulli}(\theta)\]
+
+<p>We have</p>
+
+\[\nabla_\theta \mathbb E [2 \mathrm{Bernoulli}(3\theta) + \mathrm{Bernoulli}(\theta)] = \nabla_\theta (6\theta + \theta) = 7\]
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">sample_bernoulli</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">gs_tau</span><span class="p">):</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">cat</span><span class="p">([</span><span class="n">theta</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">theta</span><span class="p">]).</span><span class="nf">log</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">functional</span><span class="p">.</span><span class="nf">gumbel_softmax</span><span class="p">(</span><span class="n">logits</span><span class="o">=</span><span class="n">logits</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">gs_tau</span><span class="p">,</span> <span class="n">hard</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">gs_tau</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="nf">sample_bernoulli</span><span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="n">theta</span><span class="p">,</span> <span class="n">gs_tau</span><span class="p">)</span> <span class="o">+</span> <span class="nf">sample_bernoulli</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">gs_tau</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">n_samples</span> <span class="o">=</span> <span class="mi">1_000</span>
+<span class="n">taus</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">]</span>
+<span class="n">gradients_per_tau</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">tau</span> <span class="ow">in</span> <span class="n">taus</span><span class="p">:</span>
+    <span class="n">gradients</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">):</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">([</span><span class="mf">0.1</span><span class="p">],</span> <span class="n">requires_grad</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="nf">f</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">tau</span><span class="p">)[</span><span class="mi">0</span><span class="p">].</span><span class="nf">backward</span><span class="p">()</span>
+        <span class="n">gradients</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">theta</span><span class="p">.</span><span class="n">grad</span><span class="p">.</span><span class="nf">item</span><span class="p">())</span>
+    <span class="n">gradients_per_tau</span><span class="p">[</span><span class="n">tau</span><span class="p">]</span> <span class="o">=</span> <span class="n">gradients</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="n">gradients</span><span class="p">)</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">gradients_per_tau</span><span class="p">.</span><span class="nf">items</span><span class="p">()):</span>
+    <span class="n">ax</span><span class="p">.</span><span class="nf">boxplot</span><span class="p">(</span><span class="n">gradients</span><span class="p">,</span> <span class="n">showmeans</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">positions</span><span class="o">=</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="sa">f</span><span class="sh">"</span><span class="s">$</span><span class="se">\\</span><span class="s">tau=</span><span class="si">{</span><span class="n">tau</span><span class="si">}</span><span class="s">$</span><span class="sh">"</span><span class="p">],</span> <span class="n">showfliers</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">axhline</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="sh">"</span><span class="s">blue</span><span class="sh">"</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="sh">"</span><span class="s">dashed</span><span class="sh">"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Expected gradient</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">legend</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.legend.Legend at 0x7ff0b0ac9750&gt;
+</code></pre></div></div>
+
+<p><img src="02-differentiating-randomness_files/02-differentiating-randomness_19_1.png" alt="png" /></p>
+
+
+      </div>
+    </main>
+  </body>
+</html>
