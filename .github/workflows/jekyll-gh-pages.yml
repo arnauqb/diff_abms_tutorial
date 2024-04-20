@@ -26,8 +26,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Change dir
-        run: cd webpage
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Pages
@@ -35,7 +33,7 @@ jobs:
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
         with:
-          source: ./
+          source: ./webpage
           destination: ./_site
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
