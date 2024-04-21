@@ -45,6 +45,7 @@ Rendered notebooks:
 - [1. Automatic Differentiation](01-automatic-differentiation)
 - [2. Differentiating Randomness](02-differentiating-randomness)
 - [3. Differentiable ABMs](03-differentiable-abm)
+- [4. Variational Inference](04-variational-inference)
 
 
 # Presenters
