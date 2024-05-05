@@ -1,3 +1,7 @@
+---
+layout: home
+---
+
 # Bayesian calibration of Agent-Based Models with Variational Inference
 
 In this tutorial we will show how to use the `blackbirds` package to calibrate an Agent-Based Model (ABM) using Variational Inference (VI). 

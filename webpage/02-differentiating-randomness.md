@@ -1,3 +1,7 @@
+---
+layout: home
+---
+
 ```python
 import torch
 import numpy as np
