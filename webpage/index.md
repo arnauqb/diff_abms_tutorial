@@ -40,16 +40,15 @@ Date: Monday 6th of May 2024.
 
 # Materials
 
-All materials for the tutorial can be found [here](https://github.com/arnauqb/diff_abms_tutorial).
+The Jupyter notebooks for the tutorial can be found in the `tutorials` directory. You can access the google colab and markdown-rendered versions here:
 
-Rendered notebooks:
+- 1. Automatic Differentiation: [Colab](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/01-automatic-differentiation.ipynb)[Markdown](01-automatic-differentiation)
+- 2. Differentiating Randomness: [Colab](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/02-differentiating-randomness.ipynb)[Markdown](02-differentiating-randomness)
+- 3. Differentiable ABMs: [Colab](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/03-differentiable-abm.ipynb)[Markdown](03-differentiable-abm)
+- 4. Variational Inference: [Colab](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/04-variational-inference.ipynb)[Markdown](04-variational-inference)
+- 5. Introduction to AgentTorch: [Colab](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/05-predator-prey.ipynb)[Markdown](05-predator-prey)
+- 6. Advanced AgentTorch API: [Colab](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/06-agent-torch.ipynb)[Markdown](06-agent-torch)
 
-- [1. Automatic Differentiation](01-automatic-differentiation)
-- [2. Differentiating Randomness](02-differentiating-randomness)
-- [3. Differentiable ABMs](03-differentiable-abm)
-- [4. Variational Inference](04-variational-inference)
-- [5. Predator-prey model](05-predator-prey)
-- [6. AgentTorch](06-agent-torch)
 
 
 # Presenters

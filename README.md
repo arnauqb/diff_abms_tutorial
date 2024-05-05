@@ -25,8 +25,8 @@ The Jupyter notebooks for the tutorial can be found in the `tutorials` directory
 - 2. Differentiating Randomness: [Colab](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/02-differentiating-randomness.ipynb)[Markdown](02-differentiating-randomness)
 - 3. Differentiable ABMs: [Colab](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/03-differentiable-abm.ipynb)[Markdown](03-differentiable-abm)
 - 4. Variational Inference: [Colab](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/04-variational-inference.ipynb)[Markdown](04-variational-inference)
-
-The notebooks are also available in Google Colab
+- 5. Introduction to AgentTorch: [Colab](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/05-predator-prey.ipynb)[Markdown](05-predator-prey)
+- 6. Advanced AgentTorch API: [Colab](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/06-agent-torch.ipynb)[Markdown](06-agent-torch)
 
 
 # Presenters
