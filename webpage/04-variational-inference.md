@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 from blackbirds.infer.vi import VI
 ```
 
-    [HAL-9093.local:09267] shmem: mmap: an error occurred while determining whether or not /var/folders/s5/jmvhvqns52q3ysypfjykg6y40000gr/T//ompi.HAL-9093.504/jf.0/3484680192/sm_segment.HAL-9093.504.cfb40000.0 could be created.
+    [HAL-9093.local:14032] shmem: mmap: an error occurred while determining whether or not /var/folders/s5/jmvhvqns52q3ysypfjykg6y40000gr/T//ompi.HAL-9093.504/jf.0/2144075776/sm_segment.HAL-9093.504.7fcc0000.0 could be created.
 
 
 # 2. Example: Calibration of a Random Walk
@@ -39,10 +39,8 @@ def random_walk(theta, n_timesteps, tau=0.5):
     theta = torch.sigmoid(theta) # to keep it phyiscal
     x = torch.tensor([0.0])
     for i in range(n_timesteps - 1):
-        #logits = torch.hstack((theta, 1 - theta)).log()
-        xi = torch.distributions.Bernoulli(theta).sample()
-        xi = xi + (theta - theta.detach())
-        #xi = torch.nn.functional.gumbel_softmax(logits, tau=tau, hard=True)[0]
+        logits = torch.hstack((theta, 1 - theta)).log()
+        xi = torch.nn.functional.gumbel_softmax(logits, tau=tau, hard=True)[0]
         next_x = x[-1] + 2 * xi - 1
         x = torch.hstack((x, next_x))
     return x
@@ -63,7 +61,7 @@ ax.plot(x_true, label='True')
 
 
 
-    [<matplotlib.lines.Line2D at 0x168a3c490>]
+    [<matplotlib.lines.Line2D at 0x17bd744f0>]
 
 
 
@@ -122,7 +120,7 @@ vi = VI(loss,
 vi.run(x_true, n_epochs=100, max_epochs_without_improvement=50)
 ```
 
-      0%|          | 0/100 [00:00<?, ?it/s]100%|██████████| 100/100 [00:11<00:00,  8.88it/s, loss=45.39, reg=140.55, total=185.94, best=185.94, stall=0] 
+    100%|██████████| 100/100 [00:18<00:00,  5.55it/s, loss=40.53, reg=178.80, total=219.34, best=199.34, stall=21]
 
 
 
@@ -158,3 +156,8 @@ ax.legend();
 ![png](04-variational-inference_files/04-variational-inference_15_0.png)
     
 
+
+
+```python
+
+```

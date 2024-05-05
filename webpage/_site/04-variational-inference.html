@@ -51,7 +51,7 @@ Let’s start by providing a short introduction to VI. Given an ABM with paramet
 <span class="kn">from</span> <span class="n">blackbirds.infer.vi</span> <span class="kn">import</span> <span class="n">VI</span>
 </code></pre></div></div>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[HAL-9093.local:09267] shmem: mmap: an error occurred while determining whether or not /var/folders/s5/jmvhvqns52q3ysypfjykg6y40000gr/T//ompi.HAL-9093.504/jf.0/3484680192/sm_segment.HAL-9093.504.cfb40000.0 could be created.
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[HAL-9093.local:14032] shmem: mmap: an error occurred while determining whether or not /var/folders/s5/jmvhvqns52q3ysypfjykg6y40000gr/T//ompi.HAL-9093.504/jf.0/2144075776/sm_segment.HAL-9093.504.7fcc0000.0 could be created.
 </code></pre></div></div>
 
 <h1 id="2-example-calibration-of-a-random-walk">2. Example: Calibration of a Random Walk</h1>
@@ -62,11 +62,9 @@ Let’s start by providing a short introduction to VI. Given an ABM with paramet
     <span class="n">theta</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">sigmoid</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="c1"># to keep it phyiscal
 </span>    <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">([</span><span class="mf">0.0</span><span class="p">])</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">n_timesteps</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
-        <span class="c1">#logits = torch.hstack((theta, 1 - theta)).log()
-</span>        <span class="n">xi</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">distributions</span><span class="p">.</span><span class="nc">Bernoulli</span><span class="p">(</span><span class="n">theta</span><span class="p">).</span><span class="nf">sample</span><span class="p">()</span>
-        <span class="n">xi</span> <span class="o">=</span> <span class="n">xi</span> <span class="o">+</span> <span class="p">(</span><span class="n">theta</span> <span class="o">-</span> <span class="n">theta</span><span class="p">.</span><span class="nf">detach</span><span class="p">())</span>
-        <span class="c1">#xi = torch.nn.functional.gumbel_softmax(logits, tau=tau, hard=True)[0]
-</span>        <span class="n">next_x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">xi</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">logits</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">hstack</span><span class="p">((</span><span class="n">theta</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">theta</span><span class="p">)).</span><span class="nf">log</span><span class="p">()</span>
+        <span class="n">xi</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">functional</span><span class="p">.</span><span class="nf">gumbel_softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">hard</span><span class="o">=</span><span class="bp">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">next_x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">xi</span> <span class="o">-</span> <span class="mi">1</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">hstack</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">next_x</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">x</span>
 </code></pre></div></div>
@@ -81,7 +79,7 @@ Let’s start by providing a short introduction to VI. Given an ABM with paramet
 <span class="n">ax</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">x_true</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">True</span><span class="sh">'</span><span class="p">)</span>
 </code></pre></div></div>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[&lt;matplotlib.lines.Line2D at 0x168a3c490&gt;]
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[&lt;matplotlib.lines.Line2D at 0x17bd744f0&gt;]
 </code></pre></div></div>
 
 <p><img src="04-variational-inference_files/04-variational-inference_5_1.png" alt="png" /></p>
@@ -127,7 +125,7 @@ Let’s start by providing a short introduction to VI. Given an ABM with paramet
 <span class="n">vi</span><span class="p">.</span><span class="nf">run</span><span class="p">(</span><span class="n">x_true</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">max_epochs_without_improvement</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
 </code></pre></div></div>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  0%|          | 0/100 [00:00&lt;?, ?it/s]100%|██████████| 100/100 [00:11&lt;00:00,  8.88it/s, loss=45.39, reg=140.55, total=185.94, best=185.94, stall=0] 
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>100%|██████████| 100/100 [00:18&lt;00:00,  5.55it/s, loss=40.53, reg=178.80, total=219.34, best=199.34, stall=21]
 </code></pre></div></div>
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># we can now inspect the loss
@@ -152,6 +150,8 @@ Let’s start by providing a short introduction to VI. Given an ABM with paramet
 
 <p><img src="04-variational-inference_files/04-variational-inference_15_0.png" alt="png" /></p>
 
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+</code></pre></div></div>
 
       </div>
     </main>
