@@ -344,6 +344,28 @@ print(f"{rep} ~ {analytical_result}")
     27.93507194519043 ~ 28.0
 
 
+# A note on reinforcement learning
+
+Recall equation (1):
+
+$$
+\nabla_\theta\mathbb E_{p_\theta(z)} [f_\theta(z)].
+$$
+
+There is an alternative way to re-express this gradient:
+
+$$
+\begin{split}
+\nabla_\theta\mathbb E_{p_\theta(z)} [f_\theta(z)] &= \nabla_\theta \int p_\theta(z) f_\theta(z) \mathrm{d} z \\
+&= \int f(z) \nabla_\theta p(z) \mathrm{d}z \\
+&= \int p_\theta(z) f_\theta(z) \nabla_\theta \log p_\theta(z) \mathrm{d} z \\
+&= \mathbb E_{p_\theta(z)}\left[f(z) \nabla_\theta \log p_\theta(z)\right]
+\end{split}
+$$
+
+The familiar reader will recognize the last expression as the score-based estimator of the gradient, also known as REINFORCE in the RL community.
+The advantage of calculating the gradient this way, is that we only require the density $p$ to be differentiable, but we have no constraints on $f$. However, this gradient does not scale well for high dimensionality of $\theta$, compared to the path-wise approach, since the variance scales with the dimension of $\theta$. See [this reference](https://arxiv.org/abs/1906.10652) for an in-depth review.
+
 # Discrete randomness
 
 The above discussion about the reparameterization trick makes the assumption that the probability density is differentiable. This is true for continuous distributions but it does not hold for discrete ones such as Bernoulli or Categorical distributions.
@@ -409,6 +431,6 @@ ax.legend()
 
 
     
-![png](02-differentiating-randomness_files/02-differentiating-randomness_19_1.png)
+![png](02-differentiating-randomness_files/02-differentiating-randomness_20_1.png)
     
 

@@ -295,6 +295,24 @@ y = \theta^2 (4 + z)
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>27.93507194519043 ~ 28.0
 </code></pre></div></div>
 
+<h1 id="a-note-on-reinforcement-learning">A note on reinforcement learning</h1>
+
+<p>Recall equation (1):</p>
+
+\[\nabla_\theta\mathbb E_{p_\theta(z)} [f_\theta(z)].\]
+
+<p>There is an alternative way to re-express this gradient:</p>
+
+\[\begin{split}
+\nabla_\theta\mathbb E_{p_\theta(z)} [f_\theta(z)] &amp;= \nabla_\theta \int p_\theta(z) f_\theta(z) \mathrm{d} z \\
+&amp;= \int f(z) \nabla_\theta p(z) \mathrm{d}z \\
+&amp;= \int p_\theta(z) f_\theta(z) \nabla_\theta \log p_\theta(z) \mathrm{d} z \\
+&amp;= \mathbb E_{p_\theta(z)}\left[f(z) \nabla_\theta \log p_\theta(z)\right]
+\end{split}\]
+
+<p>The familiar reader will recognize the last expression as the score-based estimator of the gradient, also known as REINFORCE in the RL community.
+The advantage of calculating the gradient this way, is that we only require the density $p$ to be differentiable, but we have no constraints on $f$. However, this gradient does not scale well for high dimensionality of $\theta$, compared to the path-wise approach, since the variance scales with the dimension of $\theta$. See <a href="https://arxiv.org/abs/1906.10652">this reference</a> for an in-depth review.</p>
+
 <h1 id="discrete-randomness">Discrete randomness</h1>
 
 <p>The above discussion about the reparameterization trick makes the assumption that the probability density is differentiable. This is true for continuous distributions but it does not hold for discrete ones such as Bernoulli or Categorical distributions.</p>
@@ -344,7 +362,7 @@ y = \theta^2 (4 + z)
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.legend.Legend at 0x15c2efe20&gt;
 </code></pre></div></div>
 
-<p><img src="02-differentiating-randomness_files/02-differentiating-randomness_19_1.png" alt="png" /></p>
+<p><img src="02-differentiating-randomness_files/02-differentiating-randomness_20_1.png" alt="png" /></p>
 
 
       </div>
