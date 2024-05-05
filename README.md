@@ -19,12 +19,12 @@ Date: Monday 6th of May 2024.
 
 # Materials
 
-The Jupyter notebooks for the tutorial can be found in the `tutorials` directory. You can access markdown-rendered versions here:
+The Jupyter notebooks for the tutorial can be found in the `tutorials` directory. You can access the google colab and markdown-rendered versions here:
 
-- [1. Automatic Differentiation](01-automatic-differentiation)
-- [2. Differentiating Randomness](02-differentiating-randomness)
-- [3. Differentiable ABMs](03-differentiable-abm)
-- [4. Variational Inference](04-variational-inference)
+- 1. Automatic Differentiation: [Colab](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/01-automatic-differentiation.ipynb)[Markdown](01-automatic-differentiation)
+- 2. Differentiating Randomness: [Colab](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/02-differentiating-randomness.ipynb)[Markdown](02-differentiating-randomness)
+- 3. Differentiable ABMs: [Colab](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/03-differentiable-abm.ipynb)[Markdown](03-differentiable-abm)
+- 4. Variational Inference: [Colab](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/04-variational-inference.ipynb)[Markdown](04-variational-inference)
 
 The notebooks are also available in Google Colab
 
