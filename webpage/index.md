@@ -20,7 +20,7 @@ This tutorial will introduce a new paradigm for agent-based models (ABMs) that l
 
 The tutorial is aimed at the broader AAMAS community, with a particular focus on researchers interested in "modeling and simulation of societies". The main focus will be on recent advances in agent-based modeling through the use of automatic differentiation and deep neural network integration.
 
-The tutorial will be hands-on, with demonstrations in Python, and all materials will be publicly released after the conference. Some prior experience in Python and PyTorch is desirable but not required.
+The tutorial will feature demonstrations in Python, and all materials will be publicly released after the conference. Some prior experience in Python and PyTorch is desirable but not required.
 
 
 # Outline and Schedule
@@ -30,12 +30,12 @@ Date: Monday 6th of May 2024.
 | Time | Session | Speaker |
 | --- | --- | --- |
 | 14:00 - 14:30 | State of ABM research and current challenges | Ayush Chopra |
-| 14:30 - 16:00 | Hands-on: Build a differentiable ABM in PyTorch | Arnau Quera-Bofarull|
+| 14:30 - 16:00 | Demonstration: Build a differentiable ABM in PyTorch | Arnau Quera-Bofarull|
 | 16:00 - 16:30 | Break | - |
 | 16:30 - 16:45 | Gradient-assisted ABM algorithms | Ayush Chopra |
 | 16:45 - 17:15 | Differentiable ABMs: a New Zealand application | Sijin Zhang |
-| 17:15 - 17:30 | Hands-on: Variational Inference with differentiable ABMs | Arnau Quera-Bofarull |
-| 17:30 - 17:45 | Building ABMs at scale with AgentTorch | Ayush Chopra |
+| 17:15 - 17:30 | Demonstration: Variational Inference with differentiable ABMs | Arnau Quera-Bofarull |
+| 17:30 - 17:45 | Demonstration: Building ABMs at scale with AgentTorch | Ayush Chopra |
 | 17:45 - 18:00 | Closing Remarks | - |
 
 # Materials
