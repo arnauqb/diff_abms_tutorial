@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title> </title><!-- Begin Jekyll SEO tag v2.8.0 -->
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta name="author" content="Arnau Quera-Bofarull" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A (nearly) no-css minimalist Jekyll theme." />
+<meta property="og:description" content="A (nearly) no-css minimalist Jekyll theme." />
+<link rel="canonical" href="http://github.com/riggraz/no-style-please/https://arnauqb.github.io/diff_abms_tutorial/05-predator-prey.html" />
+<meta property="og:url" content="http://github.com/riggraz/no-style-please/https://arnauqb.github.io/diff_abms_tutorial/05-predator-prey.html" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","author":{"@type":"Person","name":"Arnau Quera-Bofarull"},"description":"A (nearly) no-css minimalist Jekyll theme.","url":"http://github.com/riggraz/no-style-please/https://arnauqb.github.io/diff_abms_tutorial/05-predator-prey.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link type="application/atom+xml" rel="alternate" href="http://github.com/riggraz/no-style-please/https://arnauqb.github.io/diff_abms_tutorial/feed.xml" title=" " /><link rel="shortcut icon" type="image/x-icon" href="/https://arnauqb.github.io/diff_abms_tutorial/logo.png" />
+  <link rel="stylesheet" href="assets/css/main.css" />
+</head>
+<body a="light">
+    <main class="page-content" aria-label="Content">
+      <div class="w">
+        <header>
+  <h1> </h1></header><ul></ul><div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># import agent-torch
+</span>
+<span class="kn">import</span> <span class="n">os</span>
+<span class="kn">import</span> <span class="n">sys</span>
+<span class="n">module_path</span> <span class="o">=</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">abspath</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="sh">'</span><span class="s">../../../AgentTorch</span><span class="sh">'</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">module_path</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="p">.</span><span class="n">path</span><span class="p">:</span>
+    <span class="n">sys</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">module_path</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="n">AgentTorch</span> <span class="kn">import</span> <span class="n">Runner</span><span class="p">,</span> <span class="n">Registry</span>
+<span class="kn">from</span> <span class="n">AgentTorch.substep</span> <span class="kn">import</span> <span class="n">SubstepObservation</span><span class="p">,</span> <span class="n">SubstepAction</span><span class="p">,</span> <span class="n">SubstepTransition</span>
+<span class="kn">from</span> <span class="n">AgentTorch.helpers</span> <span class="kn">import</span> <span class="n">get_by_path</span><span class="p">,</span> <span class="n">read_config</span><span class="p">,</span> <span class="n">read_from_file</span><span class="p">,</span> <span class="n">grid_network</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># import all external libraries that we need.
+</span>
+<span class="kn">import</span> <span class="n">math</span>
+<span class="kn">import</span> <span class="n">torch</span>
+<span class="kn">import</span> <span class="n">re</span>
+<span class="kn">import</span> <span class="n">random</span>
+<span class="kn">import</span> <span class="n">argparse</span>
+<span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="n">torch.nn</span> <span class="k">as</span> <span class="n">nn</span>
+<span class="kn">import</span> <span class="n">networkx</span> <span class="k">as</span> <span class="n">nx</span>
+<span class="kn">import</span> <span class="n">osmnx</span> <span class="k">as</span> <span class="n">ox</span>
+<span class="kn">from</span> <span class="n">tqdm</span> <span class="kn">import</span> <span class="n">trange</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># define the helper functions we need.
+</span>
+<span class="k">def</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
+  <span class="sh">"""</span><span class="s">
+    Retrieves a value from the current state of the model.
+  </span><span class="sh">"""</span>
+  <span class="k">return</span> <span class="nf">get_by_path</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">re</span><span class="p">.</span><span class="nf">split</span><span class="p">(</span><span class="sh">'</span><span class="s">/</span><span class="sh">'</span><span class="p">,</span> <span class="n">var</span><span class="p">))</span>
+</code></pre></div></div>
+
+<h1 id="predator-prey-model">Predator-Prey Model</h1>
+
+<blockquote>
+  <p>The complete code for this model can be found <a href="../">here</a>. The architecture of
+the AgentTorch framework, which explains some key concepts, can be found
+<a href="https://github.com/AgentTorch/AgentTorch/pull/9/files?short_path=140eef3#diff-140eef3ba41bdcf401d507408084181f2c0ac627532b61e0f7906ea7cc926782">here</a>.</p>
+</blockquote>
+
+<p>This guide walks you through creating a custom predator-prey model using the
+AgentTorch framework. This model will simulate an ecosystem consisting of
+predators, prey and grass: predators eat prey, and prey eat grass.</p>
+
+<p>The model’s parameters, rules and configuration are passed to AgentTorch, which
+iteratively simulates the model, allowing you to optimize its learnable
+parameters, while also modelling the simulation in real time. AgentTorch’s
+Python API is based on PyTorch, which enhances its performance on GPUs.</p>
+
+<p>The following sections detail:</p>
+
+<ul>
+  <li>an overview of the model’s rules and parameters.</li>
+  <li>the properties of all entities stored in the model’s state.</li>
+  <li>the substeps that observe, simulate and modify the state for each agent.</li>
+  <li>the code required to run the simulation using <code class="language-plaintext highlighter-rouge">agent-torch</code>.</li>
+  <li>plotting the state’s trajectory using <code class="language-plaintext highlighter-rouge">matplotlib</code>.</li>
+</ul>
+
+<h2 id="model-overview">Model Overview</h2>
+
+<p>The following are configurable parameters of the model:</p>
+
+<ul>
+  <li>a $n \times m$ grid, with $p$ predators and $q$ prey to start with.</li>
+  <li>grass can grown on any of the $n \cdot m$ squares in the grid.</li>
+</ul>
+
+<p>The rules followed by the simulated interactions are configured as follows:</p>
+
+<ul>
+  <li>predators can eat only prey, and prey can eat only grass.</li>
+  <li>grass grows back once eaten after a certain number of steps.</li>
+  <li>upon consuming food, the energy of the consumer increases.</li>
+  <li>movement happens randomly, to any neighbouring square in the grid.</li>
+  <li>each move reduces the energy of the entity by a fixed amount.</li>
+</ul>
+
+<p>These parameters and rules, along with the properties of the entities (detailed
+below) in the simulation are defined in a configuration file, and passed on to
+the model.</p>
+
+<h2 id="state-environment-agents-and-objects">State: Environment, Agents, and Objects</h2>
+
+<p>The model’s state consists of a list of properties of the simulated environment,
+and the agents and objects situated in that simulation. For this model, the:</p>
+
+<h3 id="environment">Environment</h3>
+
+<p>The environment will have only one property: the size of the two-dimensional
+grid in which the predators and prey wander, defined like so:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">environment</span><span class="pi">:</span>
+  <span class="na">bounds</span><span class="pi">:</span> <span class="s">(max_x, max_y)</span> <span class="c1"># tuple of integers</span>
+</code></pre></div></div>
+
+<h3 id="agents">Agents</h3>
+
+<p>This model has two agents: predator, and prey.</p>
+
+<h4 id="predator">Predator</h4>
+
+<p>The predator agent is defined like so:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">predator</span><span class="pi">:</span>
+  <span class="na">coordinates</span><span class="pi">:</span> <span class="s">(x, y)</span> <span class="c1"># tuple of integers</span>
+  <span class="na">energy</span><span class="pi">:</span> <span class="s">float</span>
+  <span class="na">stride_work</span><span class="pi">:</span> <span class="s">float</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">coordinates</code> property depicts the current position of the predator in the
+two-dimensional grid. It is initialized from a CSV file that contains a list of
+randomly generated coordinates for all 40 predators.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">energy</code> property stores the current amount of energy possessed by the
+predator. Initially, this property is set to a random number between 30 and 100.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">stride_work</code> property is a static, but learnable property that stores the
+amount of energy to deduct from a predator for one step in any direction on the
+grid.</p>
+
+<h4 id="prey">Prey</h4>
+
+<p>The prey agent is identical to the predator agent, and has one additional
+property: <code class="language-plaintext highlighter-rouge">nutritional_value</code>.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">prey</span><span class="pi">:</span>
+  <span class="na">coordinates</span><span class="pi">:</span> <span class="s">(x, y)</span> <span class="c1"># tuple of integers</span>
+  <span class="na">energy</span><span class="pi">:</span> <span class="s">float</span>
+  <span class="na">stride_work</span><span class="pi">:</span> <span class="s">float</span>
+  <span class="na">nutritional_value</span><span class="pi">:</span> <span class="s">float</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">nutritional_value</code> property is a static but learnable property that stores
+the amount of energy gained by a predator when it consumes a single prey entity.</p>
+
+<h3 id="objects">Objects</h3>
+
+<p>This model has only one agent: grass.</p>
+
+<h4 id="grass">Grass</h4>
+
+<p>The grass entity is defined as follows:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">grass</span><span class="pi">:</span>
+  <span class="na">coordinates</span><span class="pi">:</span> <span class="s">(x, y)</span>
+  <span class="na">growth_stage</span><span class="pi">:</span> <span class="s">0|1</span>
+  <span class="na">growth_countdown</span><span class="pi">:</span> <span class="s">float</span>
+  <span class="na">regrowth_time</span><span class="pi">:</span> <span class="s">float</span>
+  <span class="na">nutritional_value</span><span class="pi">:</span> <span class="s">float</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">coordinates</code> property depicts the current position of the predator in the
+two-dimensional grid. It is initialized from a CSV file that contains a list of
+all 1600 coordinates.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">growth_stage</code> property stores the current growth stage of the grass: 0
+means it is growing, and 1 means it is fully grown.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">growth_countdown</code> property stores the number of steps after which the grass
+becomes fully grown. The <code class="language-plaintext highlighter-rouge">regrowth_time</code> property is static and learnable, and
+stores the max value of the countdown property.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">nutritional_value</code> property is a static but learnable property that stores
+the amount of energy gained by a predator when it consumes a single prey entity.</p>
+
+<h2 id="network">Network</h2>
+
+<p>The model makes use of the adjacency matrix of a two-dimensional grid filled
+with predator and prey to simulate the movement of those entities.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">network</span><span class="pi">:</span>
+  <span class="na">agent_agent</span><span class="pi">:</span>
+    <span class="na">grid</span><span class="pi">:</span> <span class="pi">[</span><span class="nv">predator</span><span class="pi">,</span> <span class="nv">prey</span><span class="pi">]</span>
+</code></pre></div></div>
+
+<h2 id="substeps">Substeps</h2>
+
+<p>Each substep is a <code class="language-plaintext highlighter-rouge">torch.nn.ModuleDict</code> that takes an input state, and produces
+an updated state as output. A substep consists of three phases:</p>
+
+<ol>
+  <li>Observation (retrieving relevant information from the state)</li>
+  <li>Policy/Action (deciding on the course of action as per the observations)</li>
+  <li>Transition (randomizing and updating the state according to the action)</li>
+</ol>
+
+<p>This model consists of four substeps: <code class="language-plaintext highlighter-rouge">move</code>, <code class="language-plaintext highlighter-rouge">eat_grass</code>, <code class="language-plaintext highlighter-rouge">hunt_prey</code>, and
+<code class="language-plaintext highlighter-rouge">grow_grass</code>.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># define all the helper functions we need.
+</span>
+<span class="k">def</span> <span class="nf">get_neighbors</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">adj_grid</span><span class="p">,</span> <span class="n">bounds</span><span class="p">):</span>
+  <span class="sh">"""</span><span class="s">
+    Returns a list of neighbours for each position passed in the given
+    `pos` tensor, using the adjacency matrix passed in `adj_grid`.
+  </span><span class="sh">"""</span>
+  <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">pos</span>
+  <span class="n">max_x</span><span class="p">,</span> <span class="n">max_y</span> <span class="o">=</span> <span class="n">bounds</span>
+
+  <span class="c1"># calculate the node number from the x, y coordinate.
+</span>  <span class="c1"># each item (i, j) in the adjacency matrix, if 1 depicts
+</span>  <span class="c1"># that i is connected to j and vice versa.
+</span>  <span class="n">node</span> <span class="o">=</span> <span class="p">(</span><span class="n">max_y</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">y</span>
+  <span class="n">conn</span> <span class="o">=</span> <span class="n">adj_grid</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+
+  <span class="n">neighbors</span> <span class="o">=</span> <span class="p">[]</span>
+  <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">cell</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+    <span class="c1"># if connected, calculate the (x, y) coords of the other
+</span>    <span class="c1"># node and add it to the list of neighbors.
+</span>    <span class="k">if</span> <span class="n">cell</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="n">c</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="p">(</span><span class="n">idx</span> <span class="o">%</span> <span class="n">max_y</span><span class="p">)</span>
+      <span class="n">r</span> <span class="o">=</span> <span class="n">math</span><span class="p">.</span><span class="nf">floor</span><span class="p">((</span><span class="n">idx</span> <span class="o">-</span> <span class="n">c</span><span class="p">)</span> <span class="o">/</span> <span class="n">max_y</span><span class="p">)</span>
+
+      <span class="n">neighbors</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">(</span><span class="n">r</span><span class="p">),</span> <span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">(</span><span class="n">c</span><span class="p">)]</span>
+      <span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">(</span><span class="n">neighbors</span><span class="p">)</span>
+
+<span class="c1"># define a function to retrieve the input required
+</span><span class="k">def</span> <span class="nf">get_find_neighbors_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">):</span>
+    <span class="n">bounds</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">bounds</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">adj_grid</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">adj_grid</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">positions</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">positions</span><span class="sh">'</span><span class="p">])</span>
+    
+    <span class="k">return</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">adj_grid</span><span class="p">,</span> <span class="n">positions</span>
+
+<span class="k">def</span> <span class="nf">get_decide_movement_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">):</span>
+    <span class="n">positions</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">positions</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">energy</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">energy</span><span class="sh">'</span><span class="p">])</span>
+    
+    <span class="k">return</span> <span class="n">positions</span><span class="p">,</span> <span class="n">energy</span>
+
+<span class="k">def</span> <span class="nf">get_update_positions_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">):</span>
+    <span class="n">prey_energy</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">prey_energy</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">pred_energy</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">pred_energy</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">prey_work</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">prey_work</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">pred_work</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">pred_work</span><span class="sh">'</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">prey_energy</span><span class="p">,</span> <span class="n">pred_energy</span><span class="p">,</span> <span class="n">prey_work</span><span class="p">,</span> <span class="n">pred_work</span>
+
+<span class="k">def</span> <span class="nf">get_find_eatable_grass_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">):</span>
+    <span class="n">bounds</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">bounds</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">positions</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">positions</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">grass_growth</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">grass_growth</span><span class="sh">'</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">grass_growth</span>
+
+<span class="k">def</span> <span class="nf">get_eat_grass_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">):</span>
+    <span class="n">bounds</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">bounds</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">prey_pos</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">prey_pos</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">energy</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">energy</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">nutrition</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">nutrition</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">grass_growth</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">grass_growth</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">growth_countdown</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">growth_countdown</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">regrowth_time</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">regrowth_time</span><span class="sh">'</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">prey_pos</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">nutrition</span><span class="p">,</span> <span class="n">grass_growth</span><span class="p">,</span> <span class="n">growth_countdown</span><span class="p">,</span> <span class="n">regrowth_time</span>
+
+<span class="k">def</span> <span class="nf">get_find_targets_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">):</span>
+    <span class="n">prey_pos</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">prey_pos</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">pred_pos</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">pred_pos</span><span class="sh">'</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">prey_pos</span><span class="p">,</span> <span class="n">pred_pos</span>
+
+<span class="k">def</span> <span class="nf">get_hunt_prey_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">):</span>
+    <span class="n">prey_pos</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">prey_pos</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">prey_energy</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">prey_energy</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">pred_pos</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">pred_pos</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">pred_energy</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">pred_energy</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">nutrition</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">nutritional_value</span><span class="sh">'</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">prey_pos</span><span class="p">,</span> <span class="n">prey_energy</span><span class="p">,</span> <span class="n">pred_pos</span><span class="p">,</span> <span class="n">pred_energy</span><span class="p">,</span> <span class="n">nutrition</span>
+
+<span class="k">def</span> <span class="nf">get_grow_grass_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">):</span>
+    <span class="n">grass_growth</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">grass_growth</span><span class="sh">'</span><span class="p">])</span>
+    <span class="n">growth_countdown</span> <span class="o">=</span> <span class="nf">get_var</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">input_variables</span><span class="p">[</span><span class="sh">'</span><span class="s">growth_countdown</span><span class="sh">'</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">grass_growth</span><span class="p">,</span> <span class="n">growth_countdown</span>
+</code></pre></div></div>
+
+<h3 id="move">Move</h3>
+
+<p>First, we <strong>observe</strong> the state, and find a list of neighboring positions for
+each of the predators/prey currently alive.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Registry.register_substep</span><span class="p">(</span><span class="sh">"</span><span class="s">find_neighbors</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">observation</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">FindNeighbors</span><span class="p">(</span><span class="n">SubstepObservation</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="nf">super</span><span class="p">().</span><span class="nf">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="n">bounds</span><span class="p">,</span> <span class="n">adj_grid</span><span class="p">,</span> <span class="n">positions</span> <span class="o">=</span> <span class="nf">get_find_neighbors_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">self</span><span class="p">.</span><span class="n">input_variables</span><span class="p">)</span>
+
+    <span class="c1"># for each agent (prey/predator), find the adjacent cells and pass
+</span>    <span class="c1"># them on to the policy class.
+</span>    <span class="n">possible_neighbors</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">positions</span><span class="p">:</span>
+      <span class="n">possible_neighbors</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span>
+        <span class="nf">get_neighbors</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">adj_grid</span><span class="p">,</span> <span class="n">bounds</span><span class="p">)</span>
+      <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span> <span class="n">self</span><span class="p">.</span><span class="n">output_variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">possible_neighbors</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>Then, we decide the course of <strong>action</strong>: to move each entity to a random
+neighboring position, only if they have the energy to do so.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Registry.register_substep</span><span class="p">(</span><span class="sh">"</span><span class="s">decide_movement</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">policy</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">DecideMovement</span><span class="p">(</span><span class="n">SubstepAction</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="nf">super</span><span class="p">().</span><span class="nf">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">observations</span><span class="p">):</span>
+    <span class="n">positions</span><span class="p">,</span> <span class="n">energy</span> <span class="o">=</span> <span class="nf">get_decide_movement_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">self</span><span class="p">.</span><span class="n">input_variables</span><span class="p">)</span>
+    <span class="n">possible_neighbors</span> <span class="o">=</span> <span class="n">observations</span><span class="p">[</span><span class="sh">'</span><span class="s">possible_neighbors</span><span class="sh">'</span><span class="p">]</span>
+
+    <span class="c1"># randomly choose the next position of the agent. if the agent
+</span>    <span class="c1"># has non-positive energy, don't let it move.
+</span>    <span class="n">next_positions</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">positions</span><span class="p">):</span>
+      <span class="n">next_positions</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span>
+        <span class="n">random</span><span class="p">.</span><span class="nf">choice</span><span class="p">(</span><span class="n">possible_neighbors</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span> <span class="k">if</span> <span class="n">energy</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">pos</span>
+      <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span> <span class="n">self</span><span class="p">.</span><span class="n">output_variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">torch</span><span class="p">.</span><span class="nf">stack</span><span class="p">(</span><span class="n">next_positions</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>Lastly, we <strong>update</strong> the state, with the new positions of the entities, and
+reduce the energy of each entity by the value of the <code class="language-plaintext highlighter-rouge">stride_work</code> learnable
+parameter.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Registry.register_substep</span><span class="p">(</span><span class="sh">"</span><span class="s">update_positions</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">transition</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">UpdatePositions</span><span class="p">(</span><span class="n">SubstepTransition</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="nf">super</span><span class="p">().</span><span class="nf">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span><span class="p">):</span>
+    <span class="n">prey_energy</span><span class="p">,</span> <span class="n">pred_energy</span><span class="p">,</span> <span class="n">prey_work</span><span class="p">,</span> <span class="n">pred_work</span> <span class="o">=</span> <span class="nf">get_update_positions_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">self</span><span class="p">.</span><span class="n">input_variables</span><span class="p">)</span>
+
+    <span class="c1"># reduce the energy of the agent by the work required by them
+</span>    <span class="c1"># to take one step.
+</span>    <span class="n">prey_energy</span> <span class="o">=</span> <span class="n">prey_energy</span> <span class="o">+</span> <span class="n">torch</span><span class="p">.</span><span class="nf">full</span><span class="p">(</span><span class="n">prey_energy</span><span class="p">.</span><span class="n">shape</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="p">(</span><span class="n">prey_work</span><span class="p">.</span><span class="nf">item</span><span class="p">()))</span>
+    <span class="n">pred_energy</span> <span class="o">=</span> <span class="n">pred_energy</span> <span class="o">+</span> <span class="n">torch</span><span class="p">.</span><span class="nf">full</span><span class="p">(</span><span class="n">pred_energy</span><span class="p">.</span><span class="n">shape</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="p">(</span><span class="n">pred_work</span><span class="p">.</span><span class="nf">item</span><span class="p">()))</span>
+    
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="n">self</span><span class="p">.</span><span class="n">output_variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">action</span><span class="p">[</span><span class="sh">'</span><span class="s">prey</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">next_positions</span><span class="sh">'</span><span class="p">],</span>
+      <span class="n">self</span><span class="p">.</span><span class="n">output_variables</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">prey_energy</span><span class="p">,</span>
+      <span class="n">self</span><span class="p">.</span><span class="n">output_variables</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span> <span class="n">action</span><span class="p">[</span><span class="sh">'</span><span class="s">predator</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">next_positions</span><span class="sh">'</span><span class="p">],</span>
+      <span class="n">self</span><span class="p">.</span><span class="n">output_variables</span><span class="p">[</span><span class="mi">3</span><span class="p">]:</span> <span class="n">pred_energy</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="eat">Eat</h3>
+
+<p>First, <strong>decide</strong> which grass is fit to be consumed by the prey.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Registry.register_substep</span><span class="p">(</span><span class="sh">"</span><span class="s">find_eatable_grass</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">policy</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">FindEatableGrass</span><span class="p">(</span><span class="n">SubstepAction</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="nf">super</span><span class="p">().</span><span class="nf">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">observations</span><span class="p">):</span>
+    <span class="n">bounds</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">grass_growth</span> <span class="o">=</span> <span class="nf">get_find_eatable_grass_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">self</span><span class="p">.</span><span class="n">input_variables</span><span class="p">)</span>
+
+    <span class="c1"># if the grass is fully grown, i.e., its growth_stage is equal to
+</span>    <span class="c1"># 1, then it can be consumed by prey.
+</span>    <span class="n">eatable_grass_positions</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">max_x</span><span class="p">,</span> <span class="n">max_y</span> <span class="o">=</span> <span class="n">bounds</span>
+    <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">positions</span><span class="p">:</span>
+      <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">pos</span>
+      <span class="n">node</span> <span class="o">=</span> <span class="p">(</span><span class="n">max_y</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">y</span>
+      <span class="k">if</span> <span class="n">grass_growth</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">eatable_grass_positions</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
+
+    <span class="c1"># pass on the consumable grass positions to the transition class.
+</span>    <span class="k">return</span> <span class="p">{</span> <span class="n">self</span><span class="p">.</span><span class="n">output_variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">eatable_grass_positions</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>Then, simulate the consumption of the grass, and <strong>update</strong> the growth stage,
+growth countdown, and energies of the grass and prey respectively.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Registry.register_substep</span><span class="p">(</span><span class="sh">"</span><span class="s">eat_grass</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">transition</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">EatGrass</span><span class="p">(</span><span class="n">SubstepTransition</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="nf">super</span><span class="p">().</span><span class="nf">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span><span class="p">):</span>
+    <span class="n">bounds</span><span class="p">,</span> <span class="n">prey_pos</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">nutrition</span><span class="p">,</span> <span class="n">grass_growth</span><span class="p">,</span> <span class="n">growth_countdown</span><span class="p">,</span> <span class="n">regrowth_time</span> <span class="o">=</span> <span class="nf">get_eat_grass_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">self</span><span class="p">.</span><span class="n">input_variables</span><span class="p">)</span>
+
+    <span class="c1"># if no grass can be eaten, skip modifying the state.
+</span>    <span class="k">if</span> <span class="nf">len</span><span class="p">(</span><span class="n">action</span><span class="p">[</span><span class="sh">'</span><span class="s">prey</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">eatable_grass_positions</span><span class="sh">'</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="n">eatable_grass_positions</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">stack</span><span class="p">(</span><span class="n">action</span><span class="p">[</span><span class="sh">'</span><span class="s">prey</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">eatable_grass_positions</span><span class="sh">'</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">max_x</span><span class="p">,</span> <span class="n">max_y</span> <span class="o">=</span> <span class="n">bounds</span>
+    <span class="n">energy_mask</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">grass_mask</span><span class="p">,</span> <span class="n">countdown_mask</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">zeros</span><span class="p">(</span><span class="o">*</span><span class="n">grass_growth</span><span class="p">.</span><span class="n">shape</span><span class="p">),</span> <span class="n">torch</span><span class="p">.</span><span class="nf">zeros</span><span class="p">(</span><span class="o">*</span><span class="n">growth_countdown</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="c1"># for each consumable grass, figure out if any prey agent is at
+</span>    <span class="c1"># that position. if yes, then mark that position in the mask as
+</span>    <span class="c1"># true. also, for all the grass that will be consumed, reset the
+</span>    <span class="c1"># growth stage.
+</span>    <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">eatable_grass_positions</span><span class="p">:</span>
+      <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">pos</span>
+      <span class="n">node</span> <span class="o">=</span> <span class="p">(</span><span class="n">max_y</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">y</span>
+
+      <span class="c1"># TODO: make sure dead prey cannot eat
+</span>      <span class="n">e_m</span> <span class="o">=</span> <span class="p">(</span><span class="n">pos</span> <span class="o">==</span> <span class="n">prey_pos</span><span class="p">).</span><span class="nf">all</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">).</span><span class="nf">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">energy_mask</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">energy_mask</span> <span class="o">=</span> <span class="n">e_m</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">energy_mask</span> <span class="o">=</span> <span class="n">e_m</span> <span class="o">+</span> <span class="n">energy_mask</span>
+
+      <span class="n">grass_mask</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+      <span class="n">countdown_mask</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">regrowth_time</span> <span class="o">-</span> <span class="n">growth_countdown</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+
+    <span class="c1"># energy + nutrition adds the `nutrition` tensor to all elements in
+</span>    <span class="c1"># the energy tensor. the (~energy_mask) ensures that the change is
+</span>    <span class="c1"># undone for those prey that did not consume grass.
+</span>    <span class="n">energy</span> <span class="o">=</span> <span class="n">energy_mask</span><span class="o">*</span><span class="p">(</span><span class="n">energy</span> <span class="o">+</span> <span class="n">nutrition</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="o">~</span><span class="n">energy_mask</span><span class="p">)</span><span class="o">*</span><span class="n">energy</span>
+
+    <span class="c1"># these masks use simple addition to make changes to the original
+</span>    <span class="c1"># values of the tensors.
+</span>    <span class="n">grass_growth</span> <span class="o">=</span> <span class="n">grass_growth</span> <span class="o">+</span> <span class="n">grass_mask</span>
+    <span class="n">growth_countdown</span> <span class="o">=</span> <span class="n">growth_countdown</span> <span class="o">+</span> <span class="n">countdown_mask</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="n">self</span><span class="p">.</span><span class="n">output_variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">energy</span><span class="p">,</span>
+      <span class="n">self</span><span class="p">.</span><span class="n">output_variables</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">grass_growth</span><span class="p">,</span>
+      <span class="n">self</span><span class="p">.</span><span class="n">output_variables</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span> <span class="n">growth_countdown</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="hunt">Hunt</h3>
+
+<p>First, <strong>decide</strong> which prey are to be eaten.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Registry.register_substep</span><span class="p">(</span><span class="sh">"</span><span class="s">find_targets</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">policy</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">FindTargets</span><span class="p">(</span><span class="n">SubstepAction</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="nf">super</span><span class="p">().</span><span class="nf">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">observations</span><span class="p">):</span>
+    <span class="n">prey_pos</span><span class="p">,</span> <span class="n">pred_pos</span> <span class="o">=</span> <span class="nf">get_find_targets_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">self</span><span class="p">.</span><span class="n">input_variables</span><span class="p">)</span>
+
+    <span class="c1"># if there are any prey at the same position as a predator,
+</span>    <span class="c1"># add them to the list of targets to kill.
+</span>    <span class="n">target_positions</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">pred_pos</span><span class="p">:</span>
+      <span class="nf">if </span><span class="p">(</span><span class="n">pos</span> <span class="o">==</span> <span class="n">prey_pos</span><span class="p">).</span><span class="nf">all</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">).</span><span class="nf">any</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="n">target_positions</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
+
+    <span class="c1"># pass that list of targets to the transition class.
+</span>    <span class="k">return</span> <span class="p">{</span> <span class="n">self</span><span class="p">.</span><span class="n">output_variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">target_positions</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>Then, <strong>update</strong> the energies of both the prey and the predator.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Registry.register_substep</span><span class="p">(</span><span class="sh">"</span><span class="s">hunt_prey</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">transition</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">HuntPrey</span><span class="p">(</span><span class="n">SubstepTransition</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="nf">super</span><span class="p">().</span><span class="nf">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span><span class="p">):</span>
+    <span class="n">prey_pos</span><span class="p">,</span> <span class="n">prey_energy</span><span class="p">,</span> <span class="n">pred_pos</span><span class="p">,</span> <span class="n">pred_energy</span><span class="p">,</span> <span class="n">nutrition</span> <span class="o">=</span> <span class="nf">get_hunt_prey_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">self</span><span class="p">.</span><span class="n">input_variables</span><span class="p">)</span>
+
+    <span class="c1"># if there are no targets, skip the state modifications.
+</span>    <span class="k">if</span> <span class="nf">len</span><span class="p">(</span><span class="n">action</span><span class="p">[</span><span class="sh">'</span><span class="s">predator</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">target_positions</span><span class="sh">'</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="n">target_positions</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">stack</span><span class="p">(</span><span class="n">action</span><span class="p">[</span><span class="sh">'</span><span class="s">predator</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">target_positions</span><span class="sh">'</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># these are masks similars to the ones in `substeps/eat.py`.
+</span>    <span class="n">prey_energy_mask</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">pred_energy_mask</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">target_positions</span><span class="p">:</span>
+      <span class="n">pye_m</span> <span class="o">=</span> <span class="p">(</span><span class="n">pos</span> <span class="o">==</span> <span class="n">prey_pos</span><span class="p">).</span><span class="nf">all</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">).</span><span class="nf">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">prey_energy_mask</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">prey_energy_mask</span> <span class="o">=</span> <span class="n">pye_m</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">prey_energy_mask</span> <span class="o">=</span> <span class="n">prey_energy_mask</span> <span class="o">+</span> <span class="n">pye_m</span>
+
+      <span class="n">pde_m</span> <span class="o">=</span> <span class="p">(</span><span class="n">pos</span> <span class="o">==</span> <span class="n">pred_pos</span><span class="p">).</span><span class="nf">all</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">).</span><span class="nf">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">pred_energy_mask</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">pred_energy_mask</span> <span class="o">=</span> <span class="n">pde_m</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">pred_energy_mask</span> <span class="o">=</span> <span class="n">pred_energy_mask</span> <span class="o">+</span> <span class="n">pde_m</span>
+
+    <span class="c1"># any prey that is marked for death should be given zero energy.
+</span>    <span class="n">prey_energy</span> <span class="o">=</span> <span class="n">prey_energy_mask</span><span class="o">*</span><span class="mi">0</span> <span class="o">+</span> <span class="p">(</span><span class="o">~</span><span class="n">prey_energy_mask</span><span class="p">)</span><span class="o">*</span><span class="n">prey_energy</span>
+    <span class="c1"># any predator that has hunted should be given additional energy.
+</span>    <span class="n">pred_energy</span> <span class="o">=</span> <span class="n">pred_energy_mask</span><span class="o">*</span><span class="p">(</span><span class="n">pred_energy</span> <span class="o">+</span> <span class="n">nutrition</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="o">~</span><span class="n">pred_energy_mask</span><span class="p">)</span><span class="o">*</span><span class="n">pred_energy</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="n">self</span><span class="p">.</span><span class="n">output_variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">prey_energy</span><span class="p">,</span>
+      <span class="n">self</span><span class="p">.</span><span class="n">output_variables</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">pred_energy</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="grow">Grow</h3>
+
+<p>In this substep, we simply <strong>update</strong> the growth countdown of every grass
+object, and if the countdown has elapsed, we update the growth stage to <code class="language-plaintext highlighter-rouge">1</code>.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Registry.register_substep</span><span class="p">(</span><span class="sh">"</span><span class="s">grow_grass</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">transition</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">GrowGrass</span><span class="p">(</span><span class="n">SubstepTransition</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="nf">super</span><span class="p">().</span><span class="nf">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span><span class="p">):</span>
+    <span class="n">grass_growth</span><span class="p">,</span> <span class="n">growth_countdown</span> <span class="o">=</span> <span class="nf">get_grow_grass_input</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">self</span><span class="p">.</span><span class="n">input_variables</span><span class="p">)</span>
+
+    <span class="c1"># reduce all countdowns by 1 unit of time.
+</span>    <span class="n">growth_countdown_mask</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">full</span><span class="p">(</span><span class="n">growth_countdown</span><span class="p">.</span><span class="n">shape</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">growth_countdown</span> <span class="o">=</span> <span class="n">growth_countdown</span> <span class="o">+</span> <span class="n">growth_countdown_mask</span>
+
+    <span class="c1"># if the countdown has reached zero, set the growth stage to 1,
+</span>    <span class="c1"># otherwise, keep it zero.
+</span>    <span class="n">grass_growth_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">growth_countdown</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">).</span><span class="nf">all</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">grass_growth</span> <span class="o">=</span> <span class="n">grass_growth_mask</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="o">~</span><span class="n">grass_growth_mask</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="n">self</span><span class="p">.</span><span class="n">output_variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">grass_growth</span><span class="p">.</span><span class="nf">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+      <span class="n">self</span><span class="p">.</span><span class="n">output_variables</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">growth_countdown</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="execution-configuration-registry-and-runner">Execution: Configuration, Registry, and Runner</h2>
+
+<h3 id="configuration">Configuration</h3>
+
+<p>There are several parts to the configuration, written in a file traditionally
+called <code class="language-plaintext highlighter-rouge">config.yaml</code>. The following is a brief overview of all the major
+sections in the configuration file.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># config.yaml</span>
+<span class="c1"># configuration for the predator-prey model.</span>
+
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="c1"># device type, episode count, data files, etc.</span>
+
+<span class="na">state</span><span class="pi">:</span>
+  <span class="na">environment</span><span class="pi">:</span>
+    <span class="c1"># variables/properties of the simulated enviroment.</span>
+
+  <span class="na">agents</span><span class="pi">:</span>
+    <span class="c1"># a list of agents in the simulation, and their properties.</span>
+    <span class="c1"># each property must be initialized by specifying a value</span>
+    <span class="c1"># or a generator function, and have a fixed tensor shape.</span>
+
+  <span class="na">objects</span><span class="pi">:</span>
+    <span class="c1"># a list of objects, similar to the agents list.</span>
+
+  <span class="na">network</span><span class="pi">:</span>
+    <span class="c1"># a list of interaction models for the simulation.</span>
+    <span class="c1"># could be a grid, or a directed graph, etc.</span>
+
+<span class="na">substeps</span><span class="pi">:</span>
+  <span class="c1"># a list of substeps</span>
+  <span class="c1"># each substep has a list of agents to run that substep for</span>
+  <span class="c1"># as well as the function, input and output variables for each</span>
+  <span class="c1"># part of that substep (observation, policy and transition)</span>
+</code></pre></div></div>
+
+<p>The following is an example of defining a property in the configuration.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">bounds</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s1">'</span><span class="s">Bounds'</span>
+  <span class="na">learnable</span><span class="pi">:</span> <span class="kc">false</span>
+  <span class="na">shape</span><span class="pi">:</span> <span class="m">2</span>
+  <span class="na">dtype</span><span class="pi">:</span> <span class="s1">'</span><span class="s">int'</span>
+  <span class="na">value</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="s">${simulation_metadata.max_x}</span> <span class="c1"># you can refer to other parts of the config using</span>
+    <span class="pi">-</span> <span class="s">${simulation_metadata.max_y}</span> <span class="c1"># the template syntax, i.e., ${path.to.config.value}</span>
+  <span class="na">initialization_function</span><span class="pi">:</span> <span class="kc">null</span>
+</code></pre></div></div>
+
+<p>Notice that to define one single property, we mentioned:</p>
+
+<ul>
+  <li>the name of the property, here, <code class="language-plaintext highlighter-rouge">'bounds'</code>.</li>
+  <li>whether or not the property is learnable, in this case, <code class="language-plaintext highlighter-rouge">false</code>.</li>
+  <li>the shape of the tensor that stores the values, in this case, it is a
+one-dimensional array of two elements: <code class="language-plaintext highlighter-rouge">(max_x, max_y)</code>.</li>
+  <li>the value of the property, either by directly providing the value or by
+providing a function that returns the value.</li>
+</ul>
+
+<p>The full configuration for the predator-prey model can be found
+<a href="../config.yaml">here</a>.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># define helper functions used in the configuration
+</span>
+<span class="nd">@Registry.register_helper</span><span class="p">(</span><span class="sh">'</span><span class="s">map</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">network</span><span class="sh">'</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">map_network</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+  <span class="n">coordinates</span> <span class="o">=</span> <span class="p">(</span><span class="mf">40.78264403323726</span><span class="p">,</span> <span class="o">-</span><span class="mf">73.96559413265355</span><span class="p">)</span> <span class="c1"># central park
+</span>  <span class="n">distance</span> <span class="o">=</span> <span class="mi">550</span>
+
+  <span class="n">graph</span> <span class="o">=</span> <span class="n">ox</span><span class="p">.</span><span class="nf">graph_from_point</span><span class="p">(</span><span class="n">coordinates</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="n">distance</span><span class="p">,</span> <span class="n">simplify</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">network_type</span><span class="o">=</span><span class="sh">"</span><span class="s">walk</span><span class="sh">"</span><span class="p">)</span>
+  <span class="n">adjacency_matrix</span> <span class="o">=</span> <span class="n">nx</span><span class="p">.</span><span class="nf">adjacency_matrix</span><span class="p">(</span><span class="n">graph</span><span class="p">).</span><span class="nf">todense</span><span class="p">()</span>
+
+  <span class="k">return</span> <span class="n">graph</span><span class="p">,</span> <span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">(</span><span class="n">adjacency_matrix</span><span class="p">)</span>
+
+<span class="nd">@Registry.register_helper</span><span class="p">(</span><span class="sh">'</span><span class="s">random_float</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">initialization</span><span class="sh">'</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">random_float</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+  <span class="sh">"""</span><span class="s">
+    Generates a `Tensor` of the given shape, with random floating point
+    numbers in between and including the lower and upper limit.
+  </span><span class="sh">"""</span>
+
+  <span class="nb">max</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="sh">'</span><span class="s">upper_limit</span><span class="sh">'</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span> <span class="c1"># include max itself.
+</span>  <span class="nb">min</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="sh">'</span><span class="s">lower_limit</span><span class="sh">'</span><span class="p">]</span>
+
+  <span class="c1"># torch.rand returns a tensor of the given shape, filled with
+</span>  <span class="c1"># floating point numbers in the range (0, 1]. multiplying the
+</span>  <span class="c1"># tensor by max - min and adding the min value ensure it's
+</span>  <span class="c1"># within the given range.
+</span>  <span class="n">tens</span> <span class="o">=</span> <span class="p">(</span><span class="nb">max</span> <span class="o">-</span> <span class="nb">min</span><span class="p">)</span> <span class="o">*</span> <span class="n">torch</span><span class="p">.</span><span class="nf">rand</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span> <span class="o">+</span> <span class="nb">min</span>
+
+  <span class="k">return</span> <span class="n">tens</span>
+
+<span class="nd">@Registry.register_helper</span><span class="p">(</span><span class="sh">'</span><span class="s">random_int</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">initialization</span><span class="sh">'</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">random_int</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+  <span class="sh">"""</span><span class="s">
+    Generates a `Tensor` of the given shape, with random integers in
+    between and including the lower and upper limit.
+  </span><span class="sh">"""</span>
+
+  <span class="nb">max</span> <span class="o">=</span> <span class="n">math</span><span class="p">.</span><span class="nf">floor</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="sh">'</span><span class="s">upper_limit</span><span class="sh">'</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="c1"># include max itself.
+</span>  <span class="nb">min</span> <span class="o">=</span> <span class="n">math</span><span class="p">.</span><span class="nf">floor</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="sh">'</span><span class="s">lower_limit</span><span class="sh">'</span><span class="p">])</span>
+
+  <span class="c1"># torch.randint returns the tensor we need.
+</span>  <span class="n">tens</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">randint</span><span class="p">(</span><span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">tens</span>
+</code></pre></div></div>
+
+<h3 id="registry-and-runner">Registry and Runner</h3>
+
+<p>The code that <strong>executes</strong> the simulation uses the AgentTorch <code class="language-plaintext highlighter-rouge">Registry</code> and <code class="language-plaintext highlighter-rouge">Runner</code>, like so:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">config</span> <span class="o">=</span> <span class="nf">read_config</span><span class="p">(</span><span class="sh">'</span><span class="s">config-map.yaml</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">metadata</span> <span class="o">=</span> <span class="n">config</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">'</span><span class="s">simulation_metadata</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">num_episodes</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">'</span><span class="s">num_episodes</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">num_steps_per_episode</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">'</span><span class="s">num_steps_per_episode</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">num_substeps_per_step</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">'</span><span class="s">num_substeps_per_step</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The registry is stores all the classes and functions used by the model, and
+allows the runner to call them as needed when intializing the simulation and
+executing the substeps.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">registry</span> <span class="o">=</span> <span class="nc">Registry</span><span class="p">()</span>
+<span class="n">registry</span><span class="p">.</span><span class="nf">register</span><span class="p">(</span><span class="n">read_from_file</span><span class="p">,</span> <span class="sh">'</span><span class="s">read_from_file</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">initialization</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">registry</span><span class="p">.</span><span class="nf">register</span><span class="p">(</span><span class="n">grid_network</span><span class="p">,</span> <span class="sh">'</span><span class="s">grid</span><span class="sh">'</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="sh">'</span><span class="s">network</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The runner intializes and executes the simulation for us. It also returns:</p>
+
+<ul>
+  <li>a list of the learnable parameters, so we can run optimization functions on
+them and use the optimized values for the next episode.</li>
+  <li>the trajectory of the state so far, so we can visualize the state using
+libraries like <code class="language-plaintext highlighter-rouge">matplotlib</code>.</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">runner</span> <span class="o">=</span> <span class="nc">Runner</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">registry</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><small> The source code for the visualizer used in the following block is given in the next section. </small></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">runner</span><span class="p">.</span><span class="nf">init</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">episode</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">num_episodes</span><span class="p">):</span>
+  <span class="n">runner</span><span class="p">.</span><span class="nf">step</span><span class="p">(</span><span class="n">num_steps_per_episode</span><span class="p">)</span>
+  
+  <span class="n">final_states</span> <span class="o">=</span> <span class="nf">list</span><span class="p">(</span><span class="nf">filter</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="sh">'</span><span class="s">current_substep</span><span class="sh">'</span><span class="p">]</span> <span class="o">==</span> <span class="nf">str</span><span class="p">(</span><span class="n">num_substeps_per_step</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="n">runner</span><span class="p">.</span><span class="n">state_trajectory</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+  <span class="p">))</span>
+  <span class="n">visualizer</span> <span class="o">=</span> <span class="nc">Plot</span><span class="p">(</span><span class="n">metadata</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">'</span><span class="s">max_x</span><span class="sh">'</span><span class="p">),</span> <span class="n">metadata</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">'</span><span class="s">max_y</span><span class="sh">'</span><span class="p">))</span>
+  <span class="n">visualizer</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">final_states</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><img src="05-predator-prey_files/05-predator-prey_47_0.png" alt="png" /></p>
+
+<p><img src="05-predator-prey_files/05-predator-prey_47_1.png" alt="png" /></p>
+
+<p><img src="05-predator-prey_files/05-predator-prey_47_2.png" alt="png" /></p>
+
+<p><img src="05-predator-prey_files/05-predator-prey_47_3.png" alt="png" /></p>
+
+<p><img src="05-predator-prey_files/05-predator-prey_47_4.png" alt="png" /></p>
+
+<p><img src="05-predator-prey_files/05-predator-prey_47_5.png" alt="png" /></p>
+
+<h2 id="visualization">Visualization</h2>
+
+<p>You can plot the simulation in different ways. In this notebook, two such methods are demonstrated; the X-Y grid, and the OpenStreetMap plot.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># display the gifs
+</span>
+<span class="kn">from</span> <span class="n">IPython.display</span> <span class="kn">import</span> <span class="n">HTML</span>
+
+<span class="nc">HTML</span><span class="p">(</span><span class="sh">"""</span><span class="s">
+    &lt;table&gt;
+    &lt;tr&gt;&lt;td&gt;
+    &lt;video alt=</span><span class="sh">"</span><span class="s">grid</span><span class="sh">"</span><span class="s"> autoplay&gt;
+        &lt;source src=</span><span class="sh">"</span><span class="s">../predator-prey.mp4</span><span class="sh">"</span><span class="s"> type=</span><span class="sh">"</span><span class="s">video/mp4</span><span class="sh">"</span><span class="s">&gt;
+    &lt;/video&gt;
+    &lt;/td&gt;&lt;td&gt;
+    &lt;img src=</span><span class="sh">"</span><span class="s">../predator-prey.gif</span><span class="sh">"</span><span class="s"> alt=</span><span class="sh">"</span><span class="s">map</span><span class="sh">"</span><span class="s"> /&gt;
+    &lt;/td&gt;&lt;/tr&gt;
+    &lt;/table&gt;
+</span><span class="sh">"""</span><span class="p">)</span>
+</code></pre></div></div>
+
+<table>
+<tr><td>
+<video alt="grid" autoplay="">
+    <source src="../predator-prey.mp4" type="video/mp4" />
+</video>
+</td><td>
+<img src="../predator-prey.gif" alt="map" />
+</td></tr>
+</table>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># render the map
+</span>
+<span class="kn">from</span> <span class="n">IPython.display</span> <span class="kn">import</span> <span class="n">display</span><span class="p">,</span> <span class="n">clear_output</span>
+
+<span class="kn">import</span> <span class="n">time</span>
+<span class="kn">import</span> <span class="n">matplotlib</span>
+<span class="kn">import</span> <span class="n">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plotter</span>
+<span class="kn">import</span> <span class="n">matplotlib.patches</span> <span class="k">as</span> <span class="n">patcher</span>
+<span class="kn">import</span> <span class="n">contextily</span> <span class="k">as</span> <span class="n">ctx</span>
+
+<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+
+<span class="k">class</span> <span class="nc">Plot</span><span class="p">:</span>
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">max_x</span><span class="p">,</span> <span class="n">max_y</span><span class="p">):</span>
+    <span class="c1"># intialize the scatterplot
+</span>    <span class="n">self</span><span class="p">.</span><span class="n">figure</span><span class="p">,</span> <span class="n">self</span><span class="p">.</span><span class="n">axes</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">prey_scatter</span><span class="p">,</span> <span class="n">self</span><span class="p">.</span><span class="n">pred_scatter</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">max_x</span><span class="p">,</span> <span class="n">self</span><span class="p">.</span><span class="n">max_y</span> <span class="o">=</span> <span class="n">max_x</span><span class="p">,</span> <span class="n">max_y</span>
+
+    <span class="n">plotter</span><span class="p">.</span><span class="nf">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">plotter</span><span class="p">.</span><span class="nf">ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_y</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+
+  <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="n">graph</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="sh">'</span><span class="s">network</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">agent_agent</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">predator_prey</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">graph</span><span class="sh">'</span><span class="p">]</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">coords</span> <span class="o">=</span> <span class="p">[(</span><span class="n">node</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="sh">'</span><span class="s">x</span><span class="sh">'</span><span class="p">],</span> <span class="n">node</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="sh">'</span><span class="s">y</span><span class="sh">'</span><span class="p">])</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span><span class="p">.</span><span class="nf">nodes</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="bp">True</span><span class="p">)]</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">coords</span><span class="p">.</span><span class="nf">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="o">-</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+    <span class="n">self</span><span class="p">.</span><span class="n">figure</span><span class="p">,</span> <span class="n">self</span><span class="p">.</span><span class="n">axes</span> <span class="o">=</span> <span class="n">ox</span><span class="p">.</span><span class="nf">plot_graph</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">edge_linewidth</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">edge_color</span><span class="o">=</span><span class="sh">'</span><span class="s">gray</span><span class="sh">'</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">ctx</span><span class="p">.</span><span class="nf">add_basemap</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">axes</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">graph</span><span class="p">.</span><span class="n">graph</span><span class="p">[</span><span class="sh">'</span><span class="s">crs</span><span class="sh">'</span><span class="p">],</span> <span class="n">source</span><span class="o">=</span><span class="n">ctx</span><span class="p">.</span><span class="n">providers</span><span class="p">.</span><span class="n">OpenStreetMap</span><span class="p">.</span><span class="n">Mapnik</span><span class="p">)</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">axes</span><span class="p">.</span><span class="nf">set_axis_off</span><span class="p">()</span>
+
+    <span class="c1"># get coordinates of all the entities to show.
+</span>    <span class="n">prey</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="sh">'</span><span class="s">agents</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">prey</span><span class="sh">'</span><span class="p">]</span>
+    <span class="n">pred</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="sh">'</span><span class="s">agents</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">predator</span><span class="sh">'</span><span class="p">]</span>
+    <span class="n">grass</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="sh">'</span><span class="s">objects</span><span class="sh">'</span><span class="p">][</span><span class="sh">'</span><span class="s">grass</span><span class="sh">'</span><span class="p">]</span>
+
+    <span class="c1"># agar energy &gt; 0 hai... toh zinda ho tum!
+</span>    <span class="n">alive_prey</span> <span class="o">=</span> <span class="n">prey</span><span class="p">[</span><span class="sh">'</span><span class="s">coordinates</span><span class="sh">'</span><span class="p">][</span><span class="n">torch</span><span class="p">.</span><span class="nf">where</span><span class="p">(</span><span class="n">prey</span><span class="p">[</span><span class="sh">'</span><span class="s">energy</span><span class="sh">'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="n">alive_pred</span> <span class="o">=</span> <span class="n">pred</span><span class="p">[</span><span class="sh">'</span><span class="s">coordinates</span><span class="sh">'</span><span class="p">][</span><span class="n">torch</span><span class="p">.</span><span class="nf">where</span><span class="p">(</span><span class="n">pred</span><span class="p">[</span><span class="sh">'</span><span class="s">energy</span><span class="sh">'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="c1"># show only fully grown grass, which can be eaten.
+</span>    <span class="n">grown_grass</span> <span class="o">=</span> <span class="n">grass</span><span class="p">[</span><span class="sh">'</span><span class="s">coordinates</span><span class="sh">'</span><span class="p">][</span><span class="n">torch</span><span class="p">.</span><span class="nf">where</span><span class="p">(</span><span class="n">grass</span><span class="p">[</span><span class="sh">'</span><span class="s">growth_stage</span><span class="sh">'</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span>
+
+    <span class="n">alive_prey_x</span><span class="p">,</span> <span class="n">alive_prey_y</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">([</span>
+      <span class="n">self</span><span class="p">.</span><span class="n">coords</span><span class="p">[(</span><span class="n">self</span><span class="p">.</span><span class="n">max_y</span> <span class="o">*</span> <span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">alive_prey</span>
+    <span class="p">]).</span><span class="n">T</span>
+    <span class="n">alive_pred_x</span><span class="p">,</span> <span class="n">alive_pred_y</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">([</span>
+      <span class="n">self</span><span class="p">.</span><span class="n">coords</span><span class="p">[(</span><span class="n">self</span><span class="p">.</span><span class="n">max_y</span> <span class="o">*</span> <span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">alive_pred</span>
+    <span class="p">]).</span><span class="n">T</span>
+
+    <span class="c1"># show prey in dark blue and predators in maroon.
+</span>    <span class="n">self</span><span class="p">.</span><span class="n">axes</span><span class="p">.</span><span class="nf">scatter</span><span class="p">(</span><span class="n">alive_prey_x</span><span class="p">,</span> <span class="n">alive_prey_y</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="sh">'</span><span class="s">#0d52bd</span><span class="sh">'</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="sh">'</span><span class="s">.</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">axes</span><span class="p">.</span><span class="nf">scatter</span><span class="p">(</span><span class="n">alive_pred_x</span><span class="p">,</span> <span class="n">alive_pred_y</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="sh">'</span><span class="s">#8b0000</span><span class="sh">'</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="sh">'</span><span class="s">.</span><span class="sh">'</span><span class="p">)</span>
+
+    <span class="c1"># increment the step count.
+</span>    <span class="n">self</span><span class="p">.</span><span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="c1"># show the current step count, and the population counts.
+</span>    <span class="n">self</span><span class="p">.</span><span class="n">axes</span><span class="p">.</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">Predator-Prey Simulation #</span><span class="sh">'</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">i</span><span class="p">),</span> <span class="n">loc</span><span class="o">=</span><span class="sh">'</span><span class="s">left</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">self</span><span class="p">.</span><span class="n">axes</span><span class="p">.</span><span class="nf">legend</span><span class="p">(</span><span class="n">handles</span><span class="o">=</span><span class="p">[</span>
+      <span class="n">patcher</span><span class="p">.</span><span class="nc">Patch</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">#fc46aa</span><span class="sh">'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="nf">str</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="sh">'</span><span class="s"> step</span><span class="sh">'</span><span class="p">),</span>
+      <span class="n">patcher</span><span class="p">.</span><span class="nc">Patch</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">#0d52bd</span><span class="sh">'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="nf">str</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">alive_prey</span><span class="p">))</span> <span class="o">+</span> <span class="sh">'</span><span class="s"> prey</span><span class="sh">'</span><span class="p">),</span>
+      <span class="n">patcher</span><span class="p">.</span><span class="nc">Patch</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">#8b0000</span><span class="sh">'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="nf">str</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">alive_pred</span><span class="p">))</span> <span class="o">+</span> <span class="sh">'</span><span class="s"> predators</span><span class="sh">'</span><span class="p">),</span>
+      <span class="c1"># patcher.Patch(color='#d1ffbd', label=str(len(grown_grass)) + ' grass')
+</span>    <span class="p">])</span>
+    
+    <span class="nf">display</span><span class="p">(</span><span class="n">plotter</span><span class="p">.</span><span class="nf">gcf</span><span class="p">())</span>
+    <span class="nf">clear_output</span><span class="p">(</span><span class="n">wait</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">time</span><span class="p">.</span><span class="nf">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">states</span><span class="p">):</span>
+    <span class="c1"># plot each state, one-by-one
+</span>    <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">states</span><span class="p">:</span>
+      <span class="n">self</span><span class="p">.</span><span class="nf">update</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+
+    <span class="nf">clear_output</span><span class="p">(</span><span class="n">wait</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+      </div>
+    </main>
+  </body>
+</html>

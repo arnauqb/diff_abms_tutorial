@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title> </title><!-- Begin Jekyll SEO tag v2.8.0 -->
+<meta name="generator" content="Jekyll v4.3.3" />
+<meta name="author" content="Arnau Quera-Bofarull" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A (nearly) no-css minimalist Jekyll theme." />
+<meta property="og:description" content="A (nearly) no-css minimalist Jekyll theme." />
+<link rel="canonical" href="http://github.com/riggraz/no-style-please/https://arnauqb.github.io/diff_abms_tutorial/01-automatic-differentiation.html" />
+<meta property="og:url" content="http://github.com/riggraz/no-style-please/https://arnauqb.github.io/diff_abms_tutorial/01-automatic-differentiation.html" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","author":{"@type":"Person","name":"Arnau Quera-Bofarull"},"description":"A (nearly) no-css minimalist Jekyll theme.","url":"http://github.com/riggraz/no-style-please/https://arnauqb.github.io/diff_abms_tutorial/01-automatic-differentiation.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link type="application/atom+xml" rel="alternate" href="http://github.com/riggraz/no-style-please/https://arnauqb.github.io/diff_abms_tutorial/feed.xml" title=" " /><link rel="shortcut icon" type="image/x-icon" href="/https://arnauqb.github.io/diff_abms_tutorial/logo.png" />
+  <link rel="stylesheet" href="assets/css/main.css" />
+</head>
+<body a="light">
+    <main class="page-content" aria-label="Content">
+      <div class="w">
+        <header>
+  <h1> </h1></header><ul></ul><div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="n">torch</span>
+<span class="kn">import</span> <span class="n">sympy</span>
+<span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+</code></pre></div></div>
+
+<h1 id="automatic-differentiation">Automatic Differentiation</h1>
+
+<p>Automatic differentation (AD) is a method to compute accurate derivatives of computer programs. It is a widely applicable method used in optimization problems such as the training of neural networks via gradient descent.</p>
+
+<p>Asside from machine learning applications, AD can be used in any context where we want to efficently and accurately compute the derivative of a suitable computer program.</p>
+
+<p>As opposed to traditional approach for differentiation such as Finite Differences (FD), AD can evaluate the derivative of a function exactly and efficiently. Let’s see an example:</p>
+
+<h2 id="1-finite-differences">1. Finite Differences</h2>
+
+<p>A “naive” approach to differentiation corresponds to computing</p>
+
+\[\frac{\partial f}{\partial x} \approx  \frac{f(x+\epsilon) - f(x)}{\epsilon}\]
+
+<p>for a small value of $\epsilon$. Let’s see how this performs:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">function</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="mi">4</span><span class="o">*</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">10</span>
+
+<span class="k">def</span> <span class="nf">function_true_derivative</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">3</span><span class="o">*</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">8</span><span class="o">*</span><span class="n">x</span>
+
+<span class="k">def</span> <span class="nf">get_fd_derivative</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">epsilon</span><span class="p">):</span>
+    <span class="nf">return </span><span class="p">(</span><span class="nf">f</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">epsilon</span><span class="p">)</span> <span class="o">-</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">epsilon</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="nf">function</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">epsilon</span> <span class="o">=</span> <span class="mf">1e-2</span>
+<span class="n">yp_true</span> <span class="o">=</span> <span class="nf">function_true_derivative</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">yp_fd</span> <span class="o">=</span> <span class="nf">get_fd_derivative</span><span class="p">(</span><span class="n">function</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">epsilon</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">()</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="sh">"</span><span class="s">o-</span><span class="sh">"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">f(x)</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">yp_true</span><span class="p">,</span> <span class="sh">"</span><span class="s">o-</span><span class="sh">"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">f</span><span class="sh">'</span><span class="s">(x) true</span><span class="sh">"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">yp_fd</span><span class="p">,</span> <span class="sh">"</span><span class="s">o-</span><span class="sh">"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">f</span><span class="sh">'</span><span class="s">(x) finite difference</span><span class="sh">"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">legend</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.legend.Legend at 0x155344790&gt;
+</code></pre></div></div>
+
+<p><img src="01-automatic-differentiation_files/01-automatic-differentiation_5_1.png" alt="png" /></p>
+
+<p>Seems to work really well! Let’s check another example.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+<span class="n">f</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="p">.</span><span class="nf">sin</span><span class="p">(</span><span class="mi">1000</span><span class="o">*</span><span class="n">x</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">sin</span><span class="p">(</span><span class="mi">1000</span><span class="o">*</span><span class="n">x</span><span class="p">)</span>
+<span class="n">yp_true</span> <span class="o">=</span> <span class="mi">1000</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="nf">cos</span><span class="p">(</span><span class="mi">1000</span><span class="o">*</span><span class="n">x</span><span class="p">)</span>
+<span class="n">yp_fd_1</span> <span class="o">=</span> <span class="nf">get_fd_derivative</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">)</span>
+<span class="n">yp_fd_2</span> <span class="o">=</span> <span class="nf">get_fd_derivative</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="sh">"</span><span class="s">o-</span><span class="sh">"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">f(x)</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">legend</span><span class="p">()</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">yp_true</span><span class="p">,</span> <span class="sh">"</span><span class="s">o-</span><span class="sh">"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">f</span><span class="sh">'</span><span class="s">(x) true</span><span class="sh">"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">yp_fd_1</span><span class="p">,</span> <span class="sh">"</span><span class="s">o-</span><span class="sh">"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="sh">"</span><span class="s">f</span><span class="sh">'</span><span class="s">(x) FD ($\epsilon=10^{-2}$)</span><span class="sh">"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">yp_fd_2</span><span class="p">,</span> <span class="sh">"</span><span class="s">o-</span><span class="sh">"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="sh">"</span><span class="s">f</span><span class="sh">'</span><span class="s">(x) FD ($\epsilon=10^{-5}$)</span><span class="sh">"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">legend</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.legend.Legend at 0x15545e470&gt;
+</code></pre></div></div>
+
+<p><img src="01-automatic-differentiation_files/01-automatic-differentiation_7_1.png" alt="png" /></p>
+
+<p>In this case, FD failed to obtain an accurate result for $\epsilon=10^{-2}$ and we had to signficantly reduce it to match the analytical result. This is a common problem in FD where choosing the right value for $\epsilon$ may require experimentation and manual tunning. Furthermore, the FD method does not scale well with the number of input dimensions. That is, if $x \in \mathbb R^n$, then we require $n$ evaluations to obtain all the $\partial f / x_i$. If we imagine $f$ to be a neural network with potentially milions of parameters, this makes FD an unpractical choice.</p>
+
+<h2 id="2--symbolic-differentiation">2.  Symbolic differentiation</h2>
+
+<p>An alternative differentiation method to finite differences is Symbolic Differentiation (SD). This is the method implemented by software packages such as Mathematica, or the Python library sympy.
+The basic idea is to hard-code the derivative of basic functions such as $\sin(x), \exp(x)$, etc. and composition rules such as</p>
+
+\[(ab)' = a'b + ab'\]
+
+<p>and apply them recursively to obtain the exact derivative of a function. Let’s see how this works:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">x_sym</span> <span class="o">=</span> <span class="n">sympy</span><span class="p">.</span><span class="nc">Symbol</span><span class="p">(</span><span class="sh">'</span><span class="s">x</span><span class="sh">'</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span><span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="n">f_sym</span> <span class="o">=</span> <span class="nf">f</span><span class="p">(</span><span class="n">x_sym</span><span class="p">)</span>
+<span class="n">f_sym</span>
+</code></pre></div></div>
+
+<p>$\displaystyle 3 x^{2} - x + 1$</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">f_sym</span><span class="p">.</span><span class="nf">diff</span><span class="p">(</span><span class="n">x_sym</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>$\displaystyle 6 x - 1$</p>
+
+<p>This way, we are able to obtain the <em>exact</em> analytical expression for the derivative and we have no problems with oscillatory functions as before</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">x_sym</span> <span class="o">=</span> <span class="n">sympy</span><span class="p">.</span><span class="nc">Symbol</span><span class="p">(</span><span class="sh">'</span><span class="s">x</span><span class="sh">'</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">sympy</span><span class="p">.</span><span class="nf">sin</span><span class="p">(</span><span class="mi">1000</span><span class="o">*</span><span class="n">x</span><span class="p">)</span>
+<span class="n">f_sym</span> <span class="o">=</span> <span class="nf">f</span><span class="p">(</span><span class="n">x_sym</span><span class="p">)</span>
+<span class="n">f_sym</span><span class="p">.</span><span class="nf">diff</span><span class="p">(</span><span class="n">x_sym</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>$\displaystyle 1000 \cos{\left(1000 x \right)}$</p>
+
+<p>What’s the catch then? Well, let’s try a more complicated function:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">f_recursive</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x</span>
+<span class="n">f_sym</span> <span class="o">=</span> <span class="nf">f_recursive</span><span class="p">(</span><span class="n">x_sym</span><span class="p">)</span>
+<span class="n">f_sym</span>
+</code></pre></div></div>
+
+<p>$\displaystyle \sin{\left(1000 \sin{\left(1000 \sin{\left(1000 \sin{\left(1000 x \right)} \right)} \right)} \right)}$</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">f_sym</span><span class="p">.</span><span class="nf">diff</span><span class="p">(</span><span class="n">x_sym</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>$\displaystyle 1000000000000 \cos{\left(1000 x \right)} \cos{\left(1000 \sin{\left(1000 x \right)} \right)} \cos{\left(1000 \sin{\left(1000 \sin{\left(1000 x \right)} \right)} \right)} \cos{\left(1000 \sin{\left(1000 \sin{\left(1000 \sin{\left(1000 x \right)} \right)} \right)} \right)}$</p>
+
+<p>This looks pretty horrible! We have run across what is known as “expression swell”. Naively expressing our full computer program as an analaytical expression may not be the best idea…</p>
+
+<p>Just imagine a typical agent-based model with millions of agents and billions of operations! Obviously, the complete expression would not fit into memory and would be intractable to manage.</p>
+
+<p>Furtheremore, symbolic differentiation is also incapable of handling control flow structures such as:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">**</span><span class="mi">3</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">3</span><span class="o">*</span> <span class="n">x</span>
+
+<span class="nf">f</span><span class="p">(</span><span class="n">x_sym</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>---------------------------------------------------------------------------
+
+TypeError                                 Traceback (most recent call last)
+
+Cell In[11], line 7
+      4     if x &gt;= 2:
+      5         return 3* x
+----&gt; 7 f(x_sym)
+
+
+Cell In[11], line 2, in f(x)
+      1 def f(x):
+----&gt; 2     if x &lt; 2:
+      3         return x**3
+      4     if x &gt;= 2:
+
+
+File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/sympy/core/relational.py:511, in Relational.__bool__(self)
+    510 def __bool__(self):
+--&gt; 511     raise TypeError("cannot determine truth value of Relational")
+
+
+TypeError: cannot determine truth value of Relational
+</code></pre></div></div>
+
+<p>but this function is differentiable almost everywhere (except at $x=2$), so it is reasonable to expect to obtain a derivative outside of $x=2$.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="nf">list</span><span class="p">(</span><span class="nf">map</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
+<span class="n">plt</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="sh">"</span><span class="s">o-</span><span class="sh">"</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[&lt;matplotlib.lines.Line2D at 0x17d36a5c0&gt;]
+</code></pre></div></div>
+
+<p><img src="01-automatic-differentiation_files/01-automatic-differentiation_21_1.png" alt="png" /></p>
+
+<h2 id="expression-representation">Expression representation</h2>
+
+<p>The problem with “expression swell” is due to us using a poor representation of the analytical expression.</p>
+
+<p>Consider the function:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="n">x</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="n">x</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="n">x</span>
+    <span class="k">return</span> <span class="n">x</span>
+</code></pre></div></div>
+
+<p>We can represent this function as an expression tree <a href="/https://arxiv.org/pdf/1904.02990.pdf">[1]</a>:</p>
+
+<p><img src="../figures/expression_tree.png" height="400" widht="400" /></p>
+
+<p>But actually, there is a significantly more efficient representation:</p>
+
+<p><img src="../figures/expression_dag.png" /></p>
+
+<p>This representation form is known as the expression DAG, or computational graph, and is a much more efficient way to store the computational trace of a computer program. This type of representation solves the ‘expresion swell’ problem.</p>
+
+<p>In reverse-mode AD packages such as PyTorch implement efficient ways of generating and storing the computational graph:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># !pip install torchviz
+</span></code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">torchviz</span>
+
+<span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">y</span> <span class="o">+</span> <span class="n">torch</span><span class="p">.</span><span class="nf">cos</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> <span class="c1"># PyTorch only tracks the graph involving variables that require grad.
+</span><span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">tensor</span><span class="p">(</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">z</span> <span class="o">=</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+<span class="n">torchviz</span><span class="p">.</span><span class="nf">make_dot</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="sh">"</span><span class="s">x</span><span class="sh">"</span> <span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="sh">"</span><span class="s">y</span><span class="sh">"</span> <span class="p">:</span> <span class="n">y</span><span class="p">},</span> <span class="n">show_attrs</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>---------------------------------------------------------------------------
+
+FileNotFoundError                         Traceback (most recent call last)
+
+File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/backend/execute.py:76, in run_check(cmd, input_lines, encoding, quiet, **kwargs)
+     75         kwargs['stdout'] = kwargs['stderr'] = subprocess.PIPE
+---&gt; 76     proc = _run_input_lines(cmd, input_lines, kwargs=kwargs)
+     77 else:
+
+
+File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/backend/execute.py:96, in _run_input_lines(cmd, input_lines, kwargs)
+     95 def _run_input_lines(cmd, input_lines, *, kwargs):
+---&gt; 96     popen = subprocess.Popen(cmd, stdin=subprocess.PIPE, **kwargs)
+     98     stdin_write = popen.stdin.write
+
+
+File ~/miniconda3/envs/torch2/lib/python3.10/subprocess.py:971, in Popen.__init__(self, args, bufsize, executable, stdin, stdout, stderr, preexec_fn, close_fds, shell, cwd, env, universal_newlines, startupinfo, creationflags, restore_signals, start_new_session, pass_fds, user, group, extra_groups, encoding, errors, text, umask, pipesize)
+    968             self.stderr = io.TextIOWrapper(self.stderr,
+    969                     encoding=encoding, errors=errors)
+--&gt; 971     self._execute_child(args, executable, preexec_fn, close_fds,
+    972                         pass_fds, cwd, env,
+    973                         startupinfo, creationflags, shell,
+    974                         p2cread, p2cwrite,
+    975                         c2pread, c2pwrite,
+    976                         errread, errwrite,
+    977                         restore_signals,
+    978                         gid, gids, uid, umask,
+    979                         start_new_session)
+    980 except:
+    981     # Cleanup if the child failed starting.
+
+
+File ~/miniconda3/envs/torch2/lib/python3.10/subprocess.py:1847, in Popen._execute_child(self, args, executable, preexec_fn, close_fds, pass_fds, cwd, env, startupinfo, creationflags, shell, p2cread, p2cwrite, c2pread, c2pwrite, errread, errwrite, restore_signals, gid, gids, uid, umask, start_new_session)
+   1846         err_msg = os.strerror(errno_num)
+-&gt; 1847     raise child_exception_type(errno_num, err_msg, err_filename)
+   1848 raise child_exception_type(err_msg)
+
+
+FileNotFoundError: [Errno 2] No such file or directory: PosixPath('dot')
+
+
+The above exception was the direct cause of the following exception:
+
+
+ExecutableNotFound                        Traceback (most recent call last)
+
+File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/IPython/core/formatters.py:974, in MimeBundleFormatter.__call__(self, obj, include, exclude)
+    971     method = get_real_method(obj, self.print_method)
+    973     if method is not None:
+--&gt; 974         return method(include=include, exclude=exclude)
+    975     return None
+    976 else:
+
+
+File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/jupyter_integration.py:98, in JupyterIntegration._repr_mimebundle_(self, include, exclude, **_)
+     96 include = set(include) if include is not None else {self._jupyter_mimetype}
+     97 include -= set(exclude or [])
+---&gt; 98 return {mimetype: getattr(self, method_name)()
+     99         for mimetype, method_name in MIME_TYPES.items()
+    100         if mimetype in include}
+
+
+File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/jupyter_integration.py:98, in &lt;dictcomp&gt;(.0)
+     96 include = set(include) if include is not None else {self._jupyter_mimetype}
+     97 include -= set(exclude or [])
+---&gt; 98 return {mimetype: getattr(self, method_name)()
+     99         for mimetype, method_name in MIME_TYPES.items()
+    100         if mimetype in include}
+
+
+File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/jupyter_integration.py:112, in JupyterIntegration._repr_image_svg_xml(self)
+    110 def _repr_image_svg_xml(self) -&gt; str:
+    111     """Return the rendered graph as SVG string."""
+--&gt; 112     return self.pipe(format='svg', encoding=SVG_ENCODING)
+
+
+File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/piping.py:104, in Pipe.pipe(self, format, renderer, formatter, neato_no_op, quiet, engine, encoding)
+     55 def pipe(self,
+     56          format: typing.Optional[str] = None,
+     57          renderer: typing.Optional[str] = None,
+   (...)
+     61          engine: typing.Optional[str] = None,
+     62          encoding: typing.Optional[str] = None) -&gt; typing.Union[bytes, str]:
+     63     """Return the source piped through the Graphviz layout command.
+     64 
+     65     Args:
+   (...)
+    102         '&lt;?xml version='
+    103     """
+--&gt; 104     return self._pipe_legacy(format,
+    105                              renderer=renderer,
+    106                              formatter=formatter,
+    107                              neato_no_op=neato_no_op,
+    108                              quiet=quiet,
+    109                              engine=engine,
+    110                              encoding=encoding)
+
+
+File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/_tools.py:171, in deprecate_positional_args.&lt;locals&gt;.decorator.&lt;locals&gt;.wrapper(*args, **kwargs)
+    162     wanted = ', '.join(f'{name}={value!r}'
+    163                        for name, value in deprecated.items())
+    164     warnings.warn(f'The signature of {func.__name__} will be reduced'
+    165                   f' to {supported_number} positional args'
+    166                   f' {list(supported)}: pass {wanted}'
+    167                   ' as keyword arg(s)',
+    168                   stacklevel=stacklevel,
+    169                   category=category)
+--&gt; 171 return func(*args, **kwargs)
+
+
+File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/piping.py:121, in Pipe._pipe_legacy(self, format, renderer, formatter, neato_no_op, quiet, engine, encoding)
+    112 @_tools.deprecate_positional_args(supported_number=2)
+    113 def _pipe_legacy(self,
+    114                  format: typing.Optional[str] = None,
+   (...)
+    119                  engine: typing.Optional[str] = None,
+    120                  encoding: typing.Optional[str] = None) -&gt; typing.Union[bytes, str]:
+--&gt; 121     return self._pipe_future(format,
+    122                              renderer=renderer,
+    123                              formatter=formatter,
+    124                              neato_no_op=neato_no_op,
+    125                              quiet=quiet,
+    126                              engine=engine,
+    127                              encoding=encoding)
+
+
+File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/piping.py:149, in Pipe._pipe_future(self, format, renderer, formatter, neato_no_op, quiet, engine, encoding)
+    146 if encoding is not None:
+    147     if codecs.lookup(encoding) is codecs.lookup(self.encoding):
+    148         # common case: both stdin and stdout need the same encoding
+--&gt; 149         return self._pipe_lines_string(*args, encoding=encoding, **kwargs)
+    150     try:
+    151         raw = self._pipe_lines(*args, input_encoding=self.encoding, **kwargs)
+
+
+File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/backend/piping.py:212, in pipe_lines_string(engine, format, input_lines, encoding, renderer, formatter, neato_no_op, quiet)
+    206 cmd = dot_command.command(engine, format,
+    207                           renderer=renderer,
+    208                           formatter=formatter,
+    209                           neato_no_op=neato_no_op)
+    210 kwargs = {'input_lines': input_lines, 'encoding': encoding}
+--&gt; 212 proc = execute.run_check(cmd, capture_output=True, quiet=quiet, **kwargs)
+    213 return proc.stdout
+
+
+File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/backend/execute.py:81, in run_check(cmd, input_lines, encoding, quiet, **kwargs)
+     79 except OSError as e:
+     80     if e.errno == errno.ENOENT:
+---&gt; 81         raise ExecutableNotFound(cmd) from e
+     82     raise
+     84 if not quiet and proc.stderr:
+
+
+ExecutableNotFound: failed to execute PosixPath('dot'), make sure the Graphviz executables are on your systems' PATH
+
+
+
+
+
+&lt;graphviz.graphs.Digraph at 0x17d8852d0&gt;
+</code></pre></div></div>
+
+<h2 id="forward-and-reverse-mode-automatic-differentiation">Forward and Reverse mode automatic differentiation</h2>
+
+<p>Once we have stored the computation graph of the program, we can compute the derivative of it by applying the chain rule through each of the operations of the diagram.
+This is equivalent to the way derivatives are obtained in the symbolic way, but the compact representation of the graph makes this problem way more tractable.</p>
+
+<p>In the diagram above, PyTorch has a differentiation rule for each of the rectangles that represent a function (i.e, Cos, Mul, Pow), etc. and we can easily obtain the total derivative by propagating through the chain rule.</p>
+
+<p>Note, however, that we have two equivalent ways of traversing the graph. We can start by the initial nodes $(x, y)$ and propagate the derivatives forward, or we can start by the final node $z$ and propagate them backwards.
+The former is known as Forward-mode AD and the latter corresponds to reverse-mode AD. Both give identical results but they exhibit different performance depending on the situation.</p>
+
+<p>Consider the two functions:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">f1</span><span class="p">(</span><span class="n">x1</span><span class="p">):</span>
+    <span class="n">x1</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">*</span> <span class="n">x1</span>
+    <span class="n">x1</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">*</span> <span class="n">x1</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">x1</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">x1</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">f2</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">x3</span><span class="p">):</span>
+    <span class="n">x1</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">*</span> <span class="n">x2</span> <span class="o">*</span> <span class="n">x3</span>
+    <span class="n">x1</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">*</span> <span class="n">x1</span>
+    <span class="k">return</span> <span class="n">x1</span>
+</code></pre></div></div>
+
+<p>The computational graphs of f1 and f2 are:</p>
+
+<p float="left">
+  <img src="../figures/multiple_outputs.png" height="300" width="200" />
+  <img src="../figures/multiple_inputs.png" height="300" width="200" /> 
+</p>
+
+<p>Note that for f1, if we start from the bottom ($x_1$) and then chain the derivatives forward, we can reuse the intermediate computation between the 1st and the 3rd node.
+If we start by the final nodes $(f_1, f_2, f_3)$ and work backwards, however, we need to traverse the graph 3 full times since we can’t amortize any part of the computation.
+The reverse is true for $f_2$.</p>
+
+<p>This example illustrates the following result. Given a function</p>
+
+\[f: \mathbb R^m \longrightarrow \mathbb R^n,\]
+
+<p>the computation of the jacobian</p>
+
+\[(J_f)_{ij} = \left(\frac{\partial f_i}{x_{j}}\right)\]
+
+<p>scales as $\mathcal O(m)$ for Forward-mode AD, and $\mathcal O(n)$ for reverse-mode AD.</p>
+
+<p>In simpler words, we generally prefer to use forward-mode AD for functions with more inputs than outputs and viceversa. In machine learning, most training of neural networks requires the differentiation of the loss function, which is a function of many inputs (number of neural network parameters) and one output (e.g., result of L2 loss). For this reason, most AD packages focus such as PyTorch is on reverse-mode AD.</p>
+
+<p>Let’s run a few examples:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">time</span> <span class="kn">import</span> <span class="n">time</span>
+
+<span class="k">def</span> <span class="nf">make_f</span><span class="p">(</span><span class="n">n_outputs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_f</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">torch</span><span class="p">.</span><span class="nf">ones</span><span class="p">(</span><span class="n">n_outputs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_f</span>
+
+<span class="c1"># scale number of outputs
+</span><span class="n">inputs</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">ones</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="sh">"</span><span class="s">outputs</span><span class="sh">"</span> <span class="p">:</span> <span class="p">{</span><span class="sh">"</span><span class="s">forward</span><span class="sh">"</span> <span class="p">:</span> <span class="p">[],</span> <span class="sh">"</span><span class="s">reverse</span><span class="sh">"</span> <span class="p">:</span> <span class="p">[]},</span> <span class="sh">"</span><span class="s">inputs</span><span class="sh">"</span> <span class="p">:</span> <span class="p">{</span><span class="sh">"</span><span class="s">forward</span><span class="sh">"</span> <span class="p">:</span> <span class="p">[],</span> <span class="sh">"</span><span class="s">reverse</span><span class="sh">"</span> <span class="p">:</span> <span class="p">[]}}</span>
+<span class="n">f_inputs</span> <span class="o">=</span> <span class="nf">make_f</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="c1">#n_range = [1, 10, 100, 1000, 10000]
+</span><span class="n">n_range</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+<span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">n_range</span><span class="p">:</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nf">make_f</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">t1</span> <span class="o">=</span> <span class="nf">time</span><span class="p">()</span>
+    <span class="n">jacobian</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">autograd</span><span class="p">.</span><span class="n">functional</span><span class="p">.</span><span class="nf">jacobian</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="sh">"</span><span class="s">reverse-mode</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">t2</span> <span class="o">=</span> <span class="nf">time</span><span class="p">()</span>
+    <span class="n">results</span><span class="p">[</span><span class="sh">"</span><span class="s">outputs</span><span class="sh">"</span><span class="p">][</span><span class="sh">"</span><span class="s">reverse</span><span class="sh">"</span><span class="p">].</span><span class="nf">append</span><span class="p">(</span><span class="n">t2</span><span class="o">-</span><span class="n">t1</span><span class="p">)</span>
+    <span class="n">t1</span> <span class="o">=</span> <span class="nf">time</span><span class="p">()</span>
+    <span class="n">jacobian</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">autograd</span><span class="p">.</span><span class="n">functional</span><span class="p">.</span><span class="nf">jacobian</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="sh">"</span><span class="s">forward-mode</span><span class="sh">"</span><span class="p">,</span> <span class="n">vectorize</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">t2</span> <span class="o">=</span> <span class="nf">time</span><span class="p">()</span>
+    <span class="n">results</span><span class="p">[</span><span class="sh">"</span><span class="s">outputs</span><span class="sh">"</span><span class="p">][</span><span class="sh">"</span><span class="s">forward</span><span class="sh">"</span><span class="p">].</span><span class="nf">append</span><span class="p">(</span><span class="n">t2</span><span class="o">-</span><span class="n">t1</span><span class="p">)</span>
+    <span class="n">varying_inputs</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nf">ones</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">t1</span> <span class="o">=</span> <span class="nf">time</span><span class="p">()</span>
+    <span class="n">jacobian</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">autograd</span><span class="p">.</span><span class="n">functional</span><span class="p">.</span><span class="nf">jacobian</span><span class="p">(</span><span class="n">f_inputs</span><span class="p">,</span> <span class="n">varying_inputs</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="sh">"</span><span class="s">reverse-mode</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">t2</span> <span class="o">=</span> <span class="nf">time</span><span class="p">()</span>
+    <span class="n">results</span><span class="p">[</span><span class="sh">"</span><span class="s">inputs</span><span class="sh">"</span><span class="p">][</span><span class="sh">"</span><span class="s">reverse</span><span class="sh">"</span><span class="p">].</span><span class="nf">append</span><span class="p">(</span><span class="n">t2</span><span class="o">-</span><span class="n">t1</span><span class="p">)</span>
+    <span class="n">t1</span> <span class="o">=</span> <span class="nf">time</span><span class="p">()</span>
+    <span class="n">jacobian</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">autograd</span><span class="p">.</span><span class="n">functional</span><span class="p">.</span><span class="nf">jacobian</span><span class="p">(</span><span class="n">f_inputs</span><span class="p">,</span> <span class="n">varying_inputs</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="sh">"</span><span class="s">forward-mode</span><span class="sh">"</span><span class="p">,</span> <span class="n">vectorize</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">t2</span> <span class="o">=</span> <span class="nf">time</span><span class="p">()</span>
+    <span class="n">results</span><span class="p">[</span><span class="sh">"</span><span class="s">inputs</span><span class="sh">"</span><span class="p">][</span><span class="sh">"</span><span class="s">forward</span><span class="sh">"</span><span class="p">].</span><span class="nf">append</span><span class="p">(</span><span class="n">t2</span><span class="o">-</span><span class="n">t1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">"</span><span class="s">Varying number of outputs.</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">n_range</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="sh">"</span><span class="s">outputs</span><span class="sh">"</span><span class="p">][</span><span class="sh">"</span><span class="s">forward</span><span class="sh">"</span><span class="p">],</span> <span class="sh">"</span><span class="s">o-</span><span class="sh">"</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="sh">"</span><span class="s">forward</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">n_range</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="sh">"</span><span class="s">outputs</span><span class="sh">"</span><span class="p">][</span><span class="sh">"</span><span class="s">reverse</span><span class="sh">"</span><span class="p">],</span> <span class="sh">"</span><span class="s">o-</span><span class="sh">"</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="sh">"</span><span class="s">reverse</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">"</span><span class="s"># of outputs</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">"</span><span class="s">Time</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">legend</span><span class="p">()</span>
+
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">"</span><span class="s">Varying number of inputs.</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">n_range</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="sh">"</span><span class="s">inputs</span><span class="sh">"</span><span class="p">][</span><span class="sh">"</span><span class="s">forward</span><span class="sh">"</span><span class="p">],</span> <span class="sh">"</span><span class="s">o-</span><span class="sh">"</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="sh">"</span><span class="s">forward</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">n_range</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="sh">"</span><span class="s">inputs</span><span class="sh">"</span><span class="p">][</span><span class="sh">"</span><span class="s">reverse</span><span class="sh">"</span><span class="p">],</span> <span class="sh">"</span><span class="s">o-</span><span class="sh">"</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="sh">"</span><span class="s">reverse</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">"</span><span class="s"># of inputs</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">"</span><span class="s">Time</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">legend</span><span class="p">()</span>
+
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;matplotlib.legend.Legend at 0x7f3a43303f40&gt;
+</code></pre></div></div>
+
+<p><img src="01-automatic-differentiation_files/01-automatic-differentiation_34_1.png" alt="png" /></p>
+
+
+      </div>
+    </main>
+  </body>
+</html>
