@@ -1,19 +1,15 @@
----
-layout: home
----
-
-# 1. Bayesian calibration of Agent-Based Models with Variational Inference
+# Bayesian calibration of Agent-Based Models with Variational Inference
 
 In this tutorial we will show how to use the `blackbirds` package to calibrate an Agent-Based Model (ABM) using Variational Inference (VI). 
-Let's start by providing a short introduction to VI. Given an ABM with parameters $$\theta$$ and observed data $$y$$, the goal of VI is to approximate the posterior distribution $$p(\theta|y)$$ with a simpler distribution $$q(\theta)$$ that is easier to work with. The optimal $$q(\theta)$$ is the one that minimizes the Kullback-Leibler divergence between $$q(\theta)$$ and $$p(\theta|y)$$.
+Let's start by providing a short introduction to VI. Given an ABM with parameters $\theta$ and observed data $y$, the goal of VI is to approximate the posterior distribution $p(\theta|y)$ with a simpler distribution parameterized by $\phi$, $q_\phi(\theta)$, that is easier to work with. The optimal $q^*(\theta)$ is the one with parameters $\phi^*$ that minimize the Kullback-Leibler divergence between $q_\phi(\theta)$ and $p(\theta|y)$.
 
-It can be shown [[see ref]](https://arxiv.org/pdf/1904.02063.pdf) that given $n$ observations $$x_{1:n}$$, a prior distribution over the parameters $$\theta$$, a choice of variational family $$q\in \mathcal Q$$, and a loss function $$\ell (\theta, x_i)$$, the optimal $$q_*(\theta)$$ is given by
+It can be shown [[see ref]](https://arxiv.org/pdf/1904.02063.pdf) that given $n$ observations $x_{1:n}$, a prior distribution over the parameters $\theta$, a choice of variational family $q\in \mathcal Q$, and a loss function $\ell (\theta, x_i)$, the optimal $q_*(\theta)$ is given by
 
 $$
 q_*(\theta) = \argmin_{q\in \mathcal Q} \left\{ \mathbb E_{q(\theta)} \left[ \sum_{i=1}^n \ell (\theta, x_i) \right] + D(q||\pi) \right\}.
 $$
 
-In standard VI, the loss function is the negative log-likelihood of the data, $$\ell (\theta, x_i) = -\log p(x_i\mid\theta)$$, and distance measure $$D$$ is the Kullback-Leibler divergence. In the case of ABMs, the likelihood function is often intractable, and we need to resort to alternative loss functions such as the $$L_2$$ distance between the observed data and the ABM output. This method where the loss function is not the negative log-likelihood is called Generalized Variational Inference (GVI) [[see ref]](https://arxiv.org/pdf/1904.02063.pdf).
+In standard VI, the loss function is the negative log-likelihood of the data, $\ell (\theta, x_i) = -\log p(x_i|\theta)$, and distance measure $D$ is the Kullback-Leibler divergence. In the case of ABMs, the likelihood function is often intractable, and we need to resort to alternative loss functions such as the $L_2$ distance between the observed data and the ABM output. This variant of VI is known as Generalized Variational Inference (GVI) [[see ref]](https://arxiv.org/pdf/1904.02063.pdf).
 
 Luckily, we do not need to worry too much about the details of the optimization process, as the `blackbirds` package takes care of that for us. We only need to provide the ABM, the observed data, and the prior distribution over the parameters. Let's see how this works in practice.
 
@@ -26,12 +22,12 @@ import matplotlib.pyplot as plt
 from blackbirds.infer.vi import VI
 ```
 
-    [HAL-9093.local:40185] shmem: mmap: an error occurred while determining whether or not /var/folders/s5/jmvhvqns52q3ysypfjykg6y40000gr/T//ompi.HAL-9093.504/jf.0/4025876480/sm_segment.HAL-9093.504.eff60000.0 could be created.
+    [HAL-9093.local:09267] shmem: mmap: an error occurred while determining whether or not /var/folders/s5/jmvhvqns52q3ysypfjykg6y40000gr/T//ompi.HAL-9093.504/jf.0/3484680192/sm_segment.HAL-9093.504.cfb40000.0 could be created.
 
 
 # 2. Example: Calibration of a Random Walk
 
-In the previous tutorial we implemented a differentiable Random Walk model. We now make a small modification by transforming the $$\theta$$ parameter to keep it in $$[0, 1]$$.
+In the previous tutorial we implemented a differentiable Random Walk model. We now make a small modification by transforming the $\theta$ parameter to keep it in $[0, 1]$.
 
 
 ```python
@@ -63,7 +59,7 @@ ax.plot(x_true, label='True')
 
 
 
-    [<matplotlib.lines.Line2D at 0x30a1fc3a0>]
+    [<matplotlib.lines.Line2D at 0x168a3c490>]
 
 
 
@@ -73,14 +69,14 @@ ax.plot(x_true, label='True')
     
 
 
-We will use a Gaussian prior over $$\theta$$.
+We will use a Gaussian prior over $\theta$.
 
 
 ```python
 prior = torch.distributions.Normal(torch.logit(torch.tensor(0.5)), 1.0)
 ```
 
-Now we need to choose a variational family for $$q$$. We will use a Normal distribution with learnable mean and variance.
+Now we need to choose a variational family for $q$. We will use a Normal distribution with learnable mean and variance.
 
 
 ```python
@@ -98,7 +94,7 @@ class TrainableGaussian(torch.nn.Module):
         return theta, logprob
 ```
 
-Now we need to specify the loss $$\ell(\theta, y)$$. We will use the $$L_2$$ distance between the observed data and the model output:
+Now we need to specify the loss $\ell(\theta, y)$. We will use the $L_2$ distance between the observed data and the model output:
 
 
 ```python
@@ -122,7 +118,7 @@ vi = VI(loss,
 vi.run(x_true, n_epochs=100, max_epochs_without_improvement=50)
 ```
 
-      0%|          | 0/100 [00:00<?, ?it/s]100%|██████████| 100/100 [00:09<00:00, 10.43it/s, loss=134.58, reg=125.91, total=260.49, best=145.10, stall=23]
+      0%|          | 0/100 [00:00<?, ?it/s]100%|██████████| 100/100 [00:11<00:00,  8.88it/s, loss=45.39, reg=140.55, total=185.94, best=185.94, stall=0] 
 
 
 
@@ -147,8 +143,8 @@ prior_samples = prior.sample((n_samples,)).numpy()
 posterior_samples = q.sample(n_samples)[0].detach().numpy()
 
 fig, ax = plt.subplots()
-ax.hist(prior_samples, bins=100, alpha=0.5, label='Prior')
-ax.hist(posterior_samples, bins=100, alpha=0.5, label='Posterior')
+ax.hist(prior_samples, bins=50, alpha=0.5, label='Prior')
+ax.hist(posterior_samples, bins=50, alpha=0.5, label='Posterior')
 ax.axvline(theta_true.numpy(), color='red', label='True')
 ax.legend();
 ```
@@ -156,3 +152,5 @@ ax.legend();
 
     
 ![png](04-variational-inference_files/04-variational-inference_15_0.png)
+    
+

@@ -1,7 +1,3 @@
----
-layout: home
----
-
 ```python
 import torch
 import numpy as np
@@ -50,7 +46,7 @@ plt.plot(x)
 
 
 
-    [<matplotlib.lines.Line2D at 0x138d87f70>]
+    [<matplotlib.lines.Line2D at 0x13eb442e0>]
 
 
 
@@ -60,7 +56,7 @@ plt.plot(x)
     
 
 
-So the model seems to be working fine. Now what we are interested is in computing the jacobian 
+Let us now compute the Jacobian
 
 $$
 (J)_i = \frac{\partial {x_i}}{\partial \theta}
@@ -79,7 +75,7 @@ plt.plot(dx_dtheta)
 
 
 
-    [<matplotlib.lines.Line2D at 0x138e7ba60>]
+    [<matplotlib.lines.Line2D at 0x13ec03790>]
 
 
 
@@ -89,10 +85,10 @@ plt.plot(dx_dtheta)
     
 
 
-We obtain a gradient of 0. Why is that? There are two main reasons:
+We obtain a gradient of 0. Why is that? There are two reasons:
 
 1. As we noted in the previous tutorials, the Bernoulli distribution is not automatically differentiable, and we need to use a continuous relaxation such as Gumbel-Softmax.
-2. AD frameworks such as PyTorch require a static computation graph to perform AD. That means that, even though they support control flow statement such as if or else, they do not support control flow statements that depend on the parameters that we want to differentiate to. This can be circumvented by using masks. That is, a statement
+2. AD frameworks such as PyTorch require a static computation graph to perform AD. Even though they support control flow statement such as `if` or `else`, they do not support control flow statements that depend on the parameters that we want to differentiate to. This can be circumvented by using masks. That is, a statement
 
 ```python
 xi = torch.distributions.Bernoulli(theta)
@@ -135,7 +131,7 @@ plt.plot(x)
 
 
 
-    [<matplotlib.lines.Line2D at 0x138ff3ee0>]
+    [<matplotlib.lines.Line2D at 0x13ec7bbb0>]
 
 
 
@@ -158,7 +154,7 @@ plt.plot(dx_dtheta)
 
 
 
-    [<matplotlib.lines.Line2D at 0x1494c61a0>]
+    [<matplotlib.lines.Line2D at 0x13f103160>]
 
 
 
@@ -191,13 +187,13 @@ for tau in taus:
 fig, ax = plt.subplots()
 for i, tau in enumerate(gradients_per_tau):
     for grad in gradients_per_tau[tau]:
-        ax.plot(grad, color=f"C{i}", alpha=0.1)
+        ax.plot(grad, color=f"C{i}", alpha=0.2)
     ax.plot(
         sum(gradients_per_tau[tau]) / n_gradient_samples,
         color=f"C{i}",
-        #linestyle="",
+        linestyle="--",
         label=rf"$\tau$ = {tau} [mean]",
-        lw=2
+        lw=3
     )
     ax.plot([], [], color=f"C{i}", label=rf"$\tau$ = {tau}")
 ax.plot(
@@ -213,7 +209,7 @@ ax.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x168585660>
+    <matplotlib.legend.Legend at 0x13eb44b80>
 
 
 
@@ -250,7 +246,7 @@ $$
 
 where $\beta$ is the effective contact rate (higher values correspond to faster disease spread), and $\gamma$ is the recovery rate (e.g., a $\gamma =0.05$ corresponds to a mean recovery time of 20 days), and S, I, R are the fraction of susceptible, infected, and recovered individuals respectively.
 
-The corresponding agent-based model can be obtained by considering a collection of $N$ agents. At each time-step, the probability of agent $i$ getting infected is given by
+The corresponding ABM can be obtained by considering a collection of $N$ agents. At each time-step, the probability of agent $i$ getting infected is given by
 
 $$
 p_i = 1 - \exp{\left(-\beta I \Delta t\right)},
@@ -325,7 +321,7 @@ ax.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x169415de0>
+    <matplotlib.legend.Legend at 0x13f188f70>
 
 
 
@@ -417,7 +413,7 @@ ax.plot(true_rec, label = "daily recoveries")
 
 
 
-    [<matplotlib.lines.Line2D at 0x169d4b4f0>]
+    [<matplotlib.lines.Line2D at 0x14f4fd120>]
 
 
 
@@ -459,7 +455,7 @@ for i in tqdm(range(n_epochs)):
     gamma_hist.append(10 ** log_gamma.item())
 ```
 
-    100%|██████████| 200/200 [01:27<00:00,  2.28it/s]
+    100%|██████████| 200/200 [01:22<00:00,  2.43it/s]
 
 
 
@@ -483,7 +479,7 @@ ax[1].legend()
 
 
 
-    <matplotlib.legend.Legend at 0x31a3ee2c0>
+    <matplotlib.legend.Legend at 0x14f4d9300>
 
 
 

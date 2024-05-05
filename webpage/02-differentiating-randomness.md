@@ -1,7 +1,3 @@
----
-layout: home
----
-
 ```python
 import torch
 import numpy as np
@@ -12,9 +8,9 @@ import matplotlib.pyplot as plt
 
 ## Fixed noise distribution
 
-In the previous notebook (01-automatic-differentiation) we covered the basics of automatic differentiation (AD). However, we left a particular topic untouched. How can we compute the derivative of stochastic programs, and what does that mean, exactly?
+In the previous notebook (01-automatic-differentiation) we covered the basics of automatic differentiation (AD). However, we left an important detail for ABMs out. How can we compute the derivative of stochastic programs, and what does that mean, exactly?
 
-Consider the following program with parameter $\theta$
+Consider the following program with an input parameter $\theta$
 
 $$
 
@@ -25,7 +21,7 @@ $$
 
 $$
 
-where $\mathcal N$ is the Normal distribution. This can be coded as:
+where $\mathcal N(\mu, \sigma)$ is the Normal distribution with mean $\mu$ and standard deviation $\sigma^2$. This can be coded as:
 
 
 ```python
@@ -40,15 +36,15 @@ $$
 \frac{\partial f(\theta)}{\partial \theta} =  \; ?
 $$
 
-If we think about the definition of derivative,
+If we think about the standard definition of derivative,
 
 $$
-\frac{\partial X(\theta)}{\partial \theta} =  \lim_{\epsilon \to 0} \frac{X(\theta+\epsilon) - X(\theta)}{\epsilon}.
+\frac{\partial f(\theta)}{\partial \theta} =  \lim_{\epsilon \to 0} \frac{f(\theta+\epsilon) - f(\theta)}{\epsilon}.
 $$
 
-we can observe that this derivative is not well defined since the difference $X(\theta+\epsilon) - X(\theta)$ will take random values and it is not clear how to treat this limit.
+we can observe that this is not well defined since the difference $f(\theta+\epsilon) - f(\theta)$ will take random values and it is not clear how to treat this limit.
 
-However, in most cases, we are actually interested in the derivative of an **average** model realization, not just the derivative of a single run. In other words, we want to take gradients of the form
+However, in many cases, we are actually interested in the derivative of an **average** model realization, not just the derivative of a single run. In other words, we want to take gradients of the form
 
 $$
 \mathbb E_{p(z)} [f_\theta(z)],
@@ -78,7 +74,7 @@ $$
 \nabla_\theta \mathbb E_{z \sim \mathcal N(1, 2)}\;\left[\theta(z+4)\right] = \mathbb E_{z\sim \mathcal N(1,2)} \left[\nabla_\theta \theta^2(z+4)\right] = 10\, \theta
 $$
 
-Let's check this result numerically and see the troubles we find.
+Let's check this result numerically.
 
 
 ```python
@@ -99,7 +95,7 @@ for i, (epsilon, samples) in enumerate(samples_per_epsilon.items()):
     ax.hist(
         samples,
         bins=100,
-        alpha=0.35,
+        alpha=0.6,
         label=f"$\epsilon={epsilon}$",
         density=True,
         color=f"C{i}",
@@ -117,7 +113,7 @@ ax.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x7ff0b1a64a60>
+    <matplotlib.legend.Legend at 0x13fcacac0>
 
 
 
@@ -131,9 +127,9 @@ What is going on? The smaller $\epsilon$ is, the variance of our estimator is go
 
 This is caused by the fact that the two function calls $X(p)$ and $X(p+\epsilon)$ are uncorrelated (they have a different random seed) and so even calling the program for very similar values of $p$ can cause large differences. 
 
-Nonetheless, the finite differences method gives an unbiased estimator in this case.
+Nonetheless, the finite differences method gives an unbiased estimator.
 
-This issue is not present in automatic differentiation engines, since they only require one evaluation of the model:
+This issue is not present in automatic differentiation engines, since they only require one evaluation of the model.
 
 
 ```python
@@ -154,10 +150,10 @@ for i in range(n_samples):
 ```python
 fig, ax = plt.subplots()
 ax.hist(
-    samples_autograd, bins=100, alpha=0.35, label="Autograd", density=True, color="C0"
+    samples_autograd, bins=100, label="Autograd", density=True, color="C0"
 )
 ax.axvline(
-    20, color="black", linestyle="dashed", linewidth=1, label="Expected derivative"
+    10*theta.item(), color="black", linestyle="dashed", linewidth=1, label="Expected derivative"
 )
 ax.legend()
 ```
@@ -165,7 +161,7 @@ ax.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x7ff0b0b57d60>
+    <matplotlib.legend.Legend at 0x15c053820>
 
 
 
@@ -181,7 +177,7 @@ As we can see, the variance is much lower than the finite difference case.
 
 In the example above, we made the assumption that the randomness of our model $p(z)$ did not depend on the structural parameters $\theta$ that we want to differentiate by.
 
-However, in most agent-based models this assumption does not hold. Consider, for instance, the case of an SIR model where agents become infected with some probability $p$. This probability may depend on structural parameters such as $R_0$ or social distancing measures that we want to calibrate.
+However, in most agent-based models this assumption does not hold. Consider, for instance, the case of an SIR model where agents become infected with some probability $q$. This probability may depend on structural parameters such as $R_0$ or social distancing measures that we want to calibrate.
 
 So now we have
 
@@ -190,7 +186,7 @@ $$
 \nabla_\theta\mathbb E_{p_\theta(z)} [f_\theta(z)],
 $$
 
-expanding the same way as before we find
+where $p$ is parameterized by $\theta$. Expanding the same way as before we find
 
 $$
 \begin{align*}
@@ -201,7 +197,7 @@ $$
 \end{align*}
 $$
 
-notice that now we have an additional term, $\int_z f_\theta(z) \nabla_\theta p_\theta(z) \mathrm{d} z$, that prevents us from commuting the gradient and the expectation. So, in general, **the gradient of the expectation is not the expectation of the gradient**.
+notice that now we have an additional term, $\int_z f_\theta(z) \nabla_\theta p_\theta(z) \mathrm{d} z$, that prevents us from commuting the gradient and the expectation. So, in general, **the gradient of the expectation is not the expectation of the gradient** when our structural parameters parameterize the randomness.
 
 
 ### The reparameterization trick
@@ -212,7 +208,7 @@ $$ x \sim p_\theta(x) $$
 
 and indirectly,
 
-$$ \epsilon \sim p(\epsilon), x = g(\epsilon, \theta) $$
+$$ \epsilon \sim p(\epsilon), \hspace{1cm} x = g(\epsilon, \theta) $$
 
 where $g$ is a deterministic path that maps parameter-free noise ($\epsilon$) to $x$. For instance, to sample from a Normal distribution $\mathcal N(\mu, \sigma^2)$, we can do
 
@@ -313,7 +309,7 @@ ax.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x7ff0b80243a0>
+    <matplotlib.legend.Legend at 0x14fdd8280>
 
 
 
@@ -323,7 +319,7 @@ ax.legend()
     
 
 
-So we need to be careful, because PyTorch may not be applying the reparameterization trick and we may obtain the wrong results!!
+As we can see, we need to be careful, because PyTorch may not be applying the reparameterization trick and we may obtain the wrong results!!
 
 By calling `dist.sample()` the gradient propagation stops and so we obtain the wrong result. Thankfully, PyTorch has a shortcut to implement the reparameterization trick for us so we don't have to do it manually. This can be done by using the `.rsample()` method.
 
@@ -338,19 +334,19 @@ rep = (
     sum([torch.func.grad(f_torch)(torch.tensor(2.0)) for i in range(n_samples)])
     / n_samples
 )
-print(f"{rep} == {analytical_result}")
+print(f"{rep} ~ {analytical_result}")
 ```
 
-    28.234447479248047 == 28.0
+    27.93507194519043 ~ 28.0
 
 
 # Discrete randomness
 
-The above discussion about the reparameterization trick makes the assumption that the random distribution is differentiable. This is true for continuous distributions but it does not hold for discrete ones such as the Bernoulli or Categorical distributions.
+The above discussion about the reparameterization trick makes the assumption that the probability density is differentiable. This is true for continuous distributions but it does not hold for discrete ones such as Bernoulli or Categorical distributions.
 
-Multiple methods exist to deal with this issue, the most common ones being the Stright-Through estimator [(Bengio et al. 2013)](https://arxiv.org/abs/1308.3432) or the Gumbel-Softmax trick [(Jang et al. 2016)](https://arxiv.org/abs/1611.01144). Newer methods are continuously being developed and the [StochasticAD.jl](https://arxiv.org/abs/2210.08572) package in the Julia language is a promising new direction.
+Multiple methods exist to deal with this issue, the most common ones being the Stright-Through estimator [(Bengio et al. 2013)](https://arxiv.org/abs/1308.3432) or the Gumbel-Softmax trick [(Jang et al. 2016)](https://arxiv.org/abs/1611.01144). Newer methods are continuously being developed such as the [StochasticAD.jl](https://arxiv.org/abs/2210.08572) package in the Julia language.
 
-Here we focus on the Gumbel-Softmax (GS) trick. The GS distribution is a continuous relaxation of the Categorical distribution. The GS has a temperature parameter $\tau$ which controls the smoothness of the approximation such that the exact Categorical sampling is recovered for $\tau\to 0$. However, the variance of the gradient will grow as $\tau\to 0$ so $\tau$ acts as a bias-variance trade-off.
+Here, we focus on the Gumbel-Softmax (GS) trick. The GS distribution is a continuous relaxation of the Categorical distribution. The GS has a temperature parameter $\tau$ which controls the smoothness of the approximation such that the exact Categorical sampling is recovered for $\tau\to 0$. However, the variance of the gradient will grow as $\tau\to 0$ so $\tau$ acts as a bias-variance trade-off.
 
 PyTorch has a standard implementation ready to use. In particular, it implements a "hard" version of GS. The idea is that we can use the samples from the categorical distribution in the forward simulated pass, and use the continuous relaxation to approximate the gradients in the backward pass. This way we guarantee that the forward simulation is exactly equivalent to the non-relaxed version.
 
@@ -403,7 +399,7 @@ ax.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x7ff0b0ac9750>
+    <matplotlib.legend.Legend at 0x15c2efe20>
 
 
 

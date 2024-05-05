@@ -29,12 +29,14 @@ Date: Monday 6th of May 2024.
 
 | Time | Session | Speaker |
 | --- | --- | --- |
-| 09:00 - 09:30 | State of ABM research and current challenges | Ayush Chopra |
-| 09:30 - 10:30 | Hands-on: Build a differentiable ABM in PyTorch | Arnau Quera-Bofarull|
-| 10:30 - 11:00 | Break | - |
-| 11:00 - 12:00 | Gradient-assisted calibration of ABMs | Ayush & Arnau |
-| 12:00 - 12:30 | Differentiable ABMs on-the-ground of the New Zealand population | Sijin Zhang |
-| 12:30 - 13:00 | Closing Remarks | - |
+| 14:00 - 14:30 | State of ABM research and current challenges | Ayush Chopra |
+| 14:30 - 16:00 | Hands-on: Build a differentiable ABM in PyTorch | Arnau Quera-Bofarull|
+| 16:00 - 16:30 | Break | - |
+| 16:30 - 16:45 | Gradient-assisted ABM algorithms | Ayush Chopra |
+| 16:45 - 17:15 | Differentiable ABMs: a New Zealand application | Sijin Zhang |
+| 17:15 - 17:30 | Hands-on: Variational Inference with differentiable ABMs | Arnau Quera-Bofarull |
+| 17:30 - 17:45 | Building ABMs at scale with AgentTorch | Ayush Chopra |
+| 17:45 - 18:00 | Closing Remarks | - |
 
 # Materials
 
@@ -46,6 +48,8 @@ Rendered notebooks:
 - [2. Differentiating Randomness](02-differentiating-randomness)
 - [3. Differentiable ABMs](03-differentiable-abm)
 - [4. Variational Inference](04-variational-inference)
+- [5. Predator-prey model](05-predator-prey)
+- [6. AgentTorch](06-agent-torch)
 
 
 # Presenters
@@ -53,3 +57,5 @@ Rendered notebooks:
 [Arnau Quera-Bofarull](https://www.arnau.ai) is a postdoctoral researcher at the Department of Computer Science of the University of Oxford.
 
 [Ayush Chopra](https://www.media.mit.edu/people/ayushc/overview/) is a PhD student at the MIT Media Lab.
+
+[Sijin Zhang](https://www.esr.cri.nz/staff-profiles/sijin-zhang) is a senior data scientist at the Institute of Environmental Science and Research (New Zealand).
