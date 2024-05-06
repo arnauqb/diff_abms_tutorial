@@ -40,6 +40,8 @@ Date: Monday 6th of May 2024.
 
 # Materials
 
+You can access the slides [here](AAMAS_Tutorial.pdf)
+
 The Jupyter notebooks for the tutorial can be found in the `tutorials` directory. You can access the google colab and markdown-rendered versions here:
 
 1. Automatic Differentiation: [[Colab]](https://colab.research.google.com/github/arnauqb/diff_abms_tutorial/blob/main/notebooks/01-automatic-differentiation.ipynb) [[Markdown]](01-automatic-differentiation)
