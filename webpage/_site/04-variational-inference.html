@@ -45,6 +45,9 @@ Let’s start by providing a short introduction to VI. Given an ABM with paramet
 
 <p>Luckily, we do not need to worry too much about the details of the optimization process, as the <code class="language-plaintext highlighter-rouge">blackbirds</code> package takes care of that for us. We only need to provide the ABM, the observed data, and the prior distribution over the parameters. Let’s see how this works in practice.</p>
 
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!pip install blackbirds
+</span></code></pre></div></div>
+
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">torch</span>
 <span class="kn">import</span> <span class="n">pandas</span> <span class="k">as</span> <span class="n">pd</span>
 <span class="kn">import</span> <span class="n">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
@@ -82,7 +85,7 @@ Let’s start by providing a short introduction to VI. Given an ABM with paramet
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[&lt;matplotlib.lines.Line2D at 0x17bd744f0&gt;]
 </code></pre></div></div>
 
-<p><img src="04-variational-inference_files/04-variational-inference_5_1.png" alt="png" /></p>
+<p><img src="04-variational-inference_files/04-variational-inference_6_1.png" alt="png" /></p>
 
 <p>We will use a Gaussian prior over $\theta$.</p>
 
@@ -133,7 +136,7 @@ Let’s start by providing a short introduction to VI. Given an ABM with paramet
 <span class="n">loss_df</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">xlabel</span><span class="o">=</span><span class="sh">'</span><span class="s">Epoch</span><span class="sh">'</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="sh">'</span><span class="s">Loss</span><span class="sh">'</span><span class="p">);</span>
 </code></pre></div></div>
 
-<p><img src="04-variational-inference_files/04-variational-inference_14_0.png" alt="png" /></p>
+<p><img src="04-variational-inference_files/04-variational-inference_15_0.png" alt="png" /></p>
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># and we can check the trained posterior
 </span>
@@ -148,7 +151,7 @@ Let’s start by providing a short introduction to VI. Given an ABM with paramet
 <span class="n">ax</span><span class="p">.</span><span class="nf">legend</span><span class="p">();</span>
 </code></pre></div></div>
 
-<p><img src="04-variational-inference_files/04-variational-inference_15_0.png" alt="png" /></p>
+<p><img src="04-variational-inference_files/04-variational-inference_16_0.png" alt="png" /></p>
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
 </code></pre></div></div>

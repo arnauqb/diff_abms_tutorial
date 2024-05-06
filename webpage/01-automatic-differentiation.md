@@ -58,7 +58,7 @@ ax.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x155344790>
+    <matplotlib.legend.Legend at 0x15a548790>
 
 
 
@@ -91,7 +91,7 @@ ax[1].legend()
 
 
 
-    <matplotlib.legend.Legend at 0x15545e470>
+    <matplotlib.legend.Legend at 0x15a7723e0>
 
 
 
@@ -164,6 +164,9 @@ What's the catch then? Well, let's try a more complicated function:
 
 
 ```python
+def f(x):
+    return 3 * x**2 -x + 1
+
 def f_recursive(x):
     for i in range(4):
         x = f(x)
@@ -175,7 +178,7 @@ f_sym
 
 
 
-$\displaystyle \sin{\left(1000 \sin{\left(1000 \sin{\left(1000 \sin{\left(1000 x \right)} \right)} \right)} \right)}$
+$\displaystyle - 3 x^{2} + x - 3 \left(- 3 x^{2} + x + 3 \left(3 x^{2} - x + 1\right)^{2}\right)^{2} + 3 \left(3 x^{2} - x + 1\right)^{2} + 3 \left(3 x^{2} - x + 3 \left(- 3 x^{2} + x + 3 \left(3 x^{2} - x + 1\right)^{2}\right)^{2} - 3 \left(3 x^{2} - x + 1\right)^{2} + 1\right)^{2}$
 
 
 
@@ -187,7 +190,7 @@ f_sym.diff(x_sym)
 
 
 
-$\displaystyle 1000000000000 \cos{\left(1000 x \right)} \cos{\left(1000 \sin{\left(1000 x \right)} \right)} \cos{\left(1000 \sin{\left(1000 \sin{\left(1000 x \right)} \right)} \right)} \cos{\left(1000 \sin{\left(1000 \sin{\left(1000 \sin{\left(1000 x \right)} \right)} \right)} \right)}$
+$\displaystyle - 6 x + 3 \cdot \left(12 x - 2\right) \left(3 x^{2} - x + 1\right) - 3 \left(- 12 x + 6 \cdot \left(12 x - 2\right) \left(3 x^{2} - x + 1\right) + 2\right) \left(- 3 x^{2} + x + 3 \left(3 x^{2} - x + 1\right)^{2}\right) + 3 \cdot \left(12 x - 6 \cdot \left(12 x - 2\right) \left(3 x^{2} - x + 1\right) + 6 \left(- 12 x + 6 \cdot \left(12 x - 2\right) \left(3 x^{2} - x + 1\right) + 2\right) \left(- 3 x^{2} + x + 3 \left(3 x^{2} - x + 1\right)^{2}\right) - 2\right) \left(3 x^{2} - x + 3 \left(- 3 x^{2} + x + 3 \left(3 x^{2} - x + 1\right)^{2}\right)^{2} - 3 \left(3 x^{2} - x + 1\right)^{2} + 1\right) + 1$
 
 
 
@@ -287,7 +290,7 @@ In reverse-mode AD packages such as PyTorch implement efficient ways of generati
 
 
 ```python
-# !pip install torchviz
+#!pip install torchviz
 ```
 
 
@@ -306,168 +309,15 @@ torchviz.make_dot(z, params={"x" : x, "y" : y}, show_attrs=True)
 ```
 
 
-    ---------------------------------------------------------------------------
 
-    FileNotFoundError                         Traceback (most recent call last)
-
-    File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/backend/execute.py:76, in run_check(cmd, input_lines, encoding, quiet, **kwargs)
-         75         kwargs['stdout'] = kwargs['stderr'] = subprocess.PIPE
-    ---> 76     proc = _run_input_lines(cmd, input_lines, kwargs=kwargs)
-         77 else:
-
-
-    File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/backend/execute.py:96, in _run_input_lines(cmd, input_lines, kwargs)
-         95 def _run_input_lines(cmd, input_lines, *, kwargs):
-    ---> 96     popen = subprocess.Popen(cmd, stdin=subprocess.PIPE, **kwargs)
-         98     stdin_write = popen.stdin.write
-
-
-    File ~/miniconda3/envs/torch2/lib/python3.10/subprocess.py:971, in Popen.__init__(self, args, bufsize, executable, stdin, stdout, stderr, preexec_fn, close_fds, shell, cwd, env, universal_newlines, startupinfo, creationflags, restore_signals, start_new_session, pass_fds, user, group, extra_groups, encoding, errors, text, umask, pipesize)
-        968             self.stderr = io.TextIOWrapper(self.stderr,
-        969                     encoding=encoding, errors=errors)
-    --> 971     self._execute_child(args, executable, preexec_fn, close_fds,
-        972                         pass_fds, cwd, env,
-        973                         startupinfo, creationflags, shell,
-        974                         p2cread, p2cwrite,
-        975                         c2pread, c2pwrite,
-        976                         errread, errwrite,
-        977                         restore_signals,
-        978                         gid, gids, uid, umask,
-        979                         start_new_session)
-        980 except:
-        981     # Cleanup if the child failed starting.
-
-
-    File ~/miniconda3/envs/torch2/lib/python3.10/subprocess.py:1847, in Popen._execute_child(self, args, executable, preexec_fn, close_fds, pass_fds, cwd, env, startupinfo, creationflags, shell, p2cread, p2cwrite, c2pread, c2pwrite, errread, errwrite, restore_signals, gid, gids, uid, umask, start_new_session)
-       1846         err_msg = os.strerror(errno_num)
-    -> 1847     raise child_exception_type(errno_num, err_msg, err_filename)
-       1848 raise child_exception_type(err_msg)
-
-
-    FileNotFoundError: [Errno 2] No such file or directory: PosixPath('dot')
 
     
-    The above exception was the direct cause of the following exception:
-
-
-    ExecutableNotFound                        Traceback (most recent call last)
-
-    File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/IPython/core/formatters.py:974, in MimeBundleFormatter.__call__(self, obj, include, exclude)
-        971     method = get_real_method(obj, self.print_method)
-        973     if method is not None:
-    --> 974         return method(include=include, exclude=exclude)
-        975     return None
-        976 else:
-
-
-    File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/jupyter_integration.py:98, in JupyterIntegration._repr_mimebundle_(self, include, exclude, **_)
-         96 include = set(include) if include is not None else {self._jupyter_mimetype}
-         97 include -= set(exclude or [])
-    ---> 98 return {mimetype: getattr(self, method_name)()
-         99         for mimetype, method_name in MIME_TYPES.items()
-        100         if mimetype in include}
-
-
-    File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/jupyter_integration.py:98, in <dictcomp>(.0)
-         96 include = set(include) if include is not None else {self._jupyter_mimetype}
-         97 include -= set(exclude or [])
-    ---> 98 return {mimetype: getattr(self, method_name)()
-         99         for mimetype, method_name in MIME_TYPES.items()
-        100         if mimetype in include}
-
-
-    File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/jupyter_integration.py:112, in JupyterIntegration._repr_image_svg_xml(self)
-        110 def _repr_image_svg_xml(self) -> str:
-        111     """Return the rendered graph as SVG string."""
-    --> 112     return self.pipe(format='svg', encoding=SVG_ENCODING)
-
-
-    File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/piping.py:104, in Pipe.pipe(self, format, renderer, formatter, neato_no_op, quiet, engine, encoding)
-         55 def pipe(self,
-         56          format: typing.Optional[str] = None,
-         57          renderer: typing.Optional[str] = None,
-       (...)
-         61          engine: typing.Optional[str] = None,
-         62          encoding: typing.Optional[str] = None) -> typing.Union[bytes, str]:
-         63     """Return the source piped through the Graphviz layout command.
-         64 
-         65     Args:
-       (...)
-        102         '<?xml version='
-        103     """
-    --> 104     return self._pipe_legacy(format,
-        105                              renderer=renderer,
-        106                              formatter=formatter,
-        107                              neato_no_op=neato_no_op,
-        108                              quiet=quiet,
-        109                              engine=engine,
-        110                              encoding=encoding)
-
-
-    File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/_tools.py:171, in deprecate_positional_args.<locals>.decorator.<locals>.wrapper(*args, **kwargs)
-        162     wanted = ', '.join(f'{name}={value!r}'
-        163                        for name, value in deprecated.items())
-        164     warnings.warn(f'The signature of {func.__name__} will be reduced'
-        165                   f' to {supported_number} positional args'
-        166                   f' {list(supported)}: pass {wanted}'
-        167                   ' as keyword arg(s)',
-        168                   stacklevel=stacklevel,
-        169                   category=category)
-    --> 171 return func(*args, **kwargs)
-
-
-    File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/piping.py:121, in Pipe._pipe_legacy(self, format, renderer, formatter, neato_no_op, quiet, engine, encoding)
-        112 @_tools.deprecate_positional_args(supported_number=2)
-        113 def _pipe_legacy(self,
-        114                  format: typing.Optional[str] = None,
-       (...)
-        119                  engine: typing.Optional[str] = None,
-        120                  encoding: typing.Optional[str] = None) -> typing.Union[bytes, str]:
-    --> 121     return self._pipe_future(format,
-        122                              renderer=renderer,
-        123                              formatter=formatter,
-        124                              neato_no_op=neato_no_op,
-        125                              quiet=quiet,
-        126                              engine=engine,
-        127                              encoding=encoding)
-
-
-    File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/piping.py:149, in Pipe._pipe_future(self, format, renderer, formatter, neato_no_op, quiet, engine, encoding)
-        146 if encoding is not None:
-        147     if codecs.lookup(encoding) is codecs.lookup(self.encoding):
-        148         # common case: both stdin and stdout need the same encoding
-    --> 149         return self._pipe_lines_string(*args, encoding=encoding, **kwargs)
-        150     try:
-        151         raw = self._pipe_lines(*args, input_encoding=self.encoding, **kwargs)
-
-
-    File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/backend/piping.py:212, in pipe_lines_string(engine, format, input_lines, encoding, renderer, formatter, neato_no_op, quiet)
-        206 cmd = dot_command.command(engine, format,
-        207                           renderer=renderer,
-        208                           formatter=formatter,
-        209                           neato_no_op=neato_no_op)
-        210 kwargs = {'input_lines': input_lines, 'encoding': encoding}
-    --> 212 proc = execute.run_check(cmd, capture_output=True, quiet=quiet, **kwargs)
-        213 return proc.stdout
-
-
-    File ~/miniconda3/envs/torch2/lib/python3.10/site-packages/graphviz/backend/execute.py:81, in run_check(cmd, input_lines, encoding, quiet, **kwargs)
-         79 except OSError as e:
-         80     if e.errno == errno.ENOENT:
-    ---> 81         raise ExecutableNotFound(cmd) from e
-         82     raise
-         84 if not quiet and proc.stderr:
-
-
-    ExecutableNotFound: failed to execute PosixPath('dot'), make sure the Graphviz executables are on your systems' PATH
+![svg](01-automatic-differentiation_files/01-automatic-differentiation_27_0.svg)
+    
 
 
 
-
-
-    <graphviz.graphs.Digraph at 0x17d8852d0>
-
-
+Note: See [this ref](https://arxiv.org/pdf/1904.02990) as a source for the differences between autodiff and symbolic diff.
 
 ## Forward and Reverse mode automatic differentiation
 
@@ -587,6 +437,6 @@ ax[1].legend()
 
 
     
-![png](01-automatic-differentiation_files/01-automatic-differentiation_34_1.png)
+![png](01-automatic-differentiation_files/01-automatic-differentiation_35_1.png)
     
 

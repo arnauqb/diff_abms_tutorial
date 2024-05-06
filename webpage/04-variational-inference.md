@@ -20,6 +20,11 @@ Luckily, we do not need to worry too much about the details of the optimization 
 
 
 ```python
+#!pip install blackbirds
+```
+
+
+```python
 import torch
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -67,7 +72,7 @@ ax.plot(x_true, label='True')
 
 
     
-![png](04-variational-inference_files/04-variational-inference_5_1.png)
+![png](04-variational-inference_files/04-variational-inference_6_1.png)
     
 
 
@@ -132,7 +137,7 @@ loss_df.plot(xlabel='Epoch', ylabel='Loss');
 
 
     
-![png](04-variational-inference_files/04-variational-inference_14_0.png)
+![png](04-variational-inference_files/04-variational-inference_15_0.png)
     
 
 
@@ -153,7 +158,7 @@ ax.legend();
 
 
     
-![png](04-variational-inference_files/04-variational-inference_15_0.png)
+![png](04-variational-inference_files/04-variational-inference_16_0.png)
     
 
 
