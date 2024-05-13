@@ -9,17 +9,17 @@ Date: Monday 6th of May 2024.
 | Time | Session | Speaker |
 | --- | --- | --- |
 | 14:00 - 14:30 | State of ABM research and current challenges | Ayush Chopra |
-| 14:30 - 16:00 | Hands-on: Build a differentiable ABM in PyTorch | Arnau Quera-Bofarull|
+| 14:30 - 15:30 | Demonstration: Build a differentiable ABM in PyTorch | Arnau Quera-Bofarull|
+| 15:30 - 16:00 | Gradient-assisted ABM algorithms | Ayush Chopra |
 | 16:00 - 16:30 | Break | - |
-| 16:30 - 16:45 | Gradient-assisted ABM algorithms | Ayush Chopra |
-| 16:45 - 17:15 | Differentiable ABMs: a New Zealand application | Sijin Zhang |
-| 17:15 - 17:30 | Hands-on: Variational Inference with differentiable ABMs | Arnau Quera-Bofarull |
-| 17:30 - 17:45 | Building ABMs at scale with AgentTorch | Ayush Chopra |
-| 17:45 - 18:00 | Closing Remarks | - |
+| 16:30 - 17:00 | Differentiable ABMs: a New Zealand application | Sijin Zhang |
+| 17:00 - 17:25 | Demonstration: Variational Inference with differentiable ABMs | Arnau Quera-Bofarull |
+| 17:25 - 17:50 | Demonstration: Building ABMs at scale with AgentTorch | Ayush Chopra |
+| 17:50 - 18:00 | Closing Remarks | - |
 
 # Materials
 
-You can access the slides [here](https://www.arnau.ai/diff_abms_tutorial/AAMAS-Tutorial.pdf)
+You can access the slides [here](https://www.arnau.ai/diff_abms_tutorial/webpage/AAMAS-Tutorial.pdf)
 
 The Jupyter notebooks for the tutorial can be found in the `tutorials` directory. You can access the google colab and markdown-rendered versions here:
 
