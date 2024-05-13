@@ -19,7 +19,7 @@ Date: Monday 6th of May 2024.
 
 # Materials
 
-You can access the slides [here](https://www.arnau.ai/diff_abms_tutorial/webpage/AAMAS-Tutorial.pdf)
+You can access the slides [here](https://www.arnau.ai/diff_abms_tutorial/webpage/AAMAS_Tutorial.pdf)
 
 The Jupyter notebooks for the tutorial can be found in the `tutorials` directory. You can access the google colab and markdown-rendered versions here:
 
